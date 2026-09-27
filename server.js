@@ -85,7 +85,7 @@ async function sendSMSNotification(userId, message) {
 
             console.log(`[SEMAPHORE SMS SUCCESS] Sent to ${recipientNumber} (User ID ${userId}): "${message}"`);
 
-            const sqlLog = 'INSERT INTO sms_logs (user_id, message, status) VALUES (?, ?, "Sent")';
+            const sqlLog = "INSERT INTO sms_logs (user_id, message, status) VALUES (?, ?, 'Sent')";
             db.query(sqlLog, [userId, message], (err) => {
                 if (err) console.error('Failed to log SMS update:', err);
             });
@@ -94,7 +94,7 @@ async function sendSMSNotification(userId, message) {
             const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
             console.error(`[SEMAPHORE SMS ERROR] Failed to send SMS to User ID ${userId}:`, errorMsg);
 
-            const sqlLog = 'INSERT INTO sms_logs (user_id, message, status) VALUES (?, ?, "Failed")';
+            const sqlLog = "INSERT INTO sms_logs (user_id, message, status) VALUES (?, ?, 'Failed')";
             db.query(sqlLog, [userId, message], (err) => {
                 if (err) console.error('Failed to log SMS update:', err);
             });
@@ -105,7 +105,7 @@ async function sendSMSNotification(userId, message) {
 // Serve static HTML, CSS, and JS files from the root folder
 app.use(express.static(__dirname));
 
-// Default Root Route (Ensures index.html or login.html opens on visiting https://e-barangay-connect.onrender.com)
+// Default Root Route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'), (err) => {
         if (err) {
@@ -126,7 +126,8 @@ app.post('/api/auth/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const sql = 'INSERT INTO users (full_name, username, email, phone_number, password_hash, role) VALUES (?, ?, ?, ?, ?, "resident")';
+        // FIXED: Using single quotes 'resident' instead of double quotes "resident"
+        const sql = "INSERT INTO users (full_name, username, email, phone_number, password_hash, role) VALUES (?, ?, ?, ?, ?, 'resident')";
         
         db.query(sql, [username, username, email, phone_number, hashedPassword], (err, result) => {
             if (err) {
