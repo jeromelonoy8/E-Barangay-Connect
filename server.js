@@ -3,6 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const axios = require('axios');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -100,6 +101,18 @@ async function sendSMSNotification(userId, message) {
         }
     });
 }
+
+// Serve static HTML, CSS, and JS files from the root folder
+app.use(express.static(__dirname));
+
+// Default Root Route (Ensures index.html or login.html opens on visiting https://e-barangay-connect.onrender.com)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'), (err) => {
+        if (err) {
+            res.sendFile(path.join(__dirname, 'login.html'));
+        }
+    });
+});
 
 // ---------------- API ENDPOINTS ----------------
 
