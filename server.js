@@ -11,25 +11,29 @@ app.use(express.json());
 
 // Semaphore Credentials
 const SEMAPHORE_API_KEY = process.env.SEMAPHORE_API_KEY || '7b09252a2b017b124579f7f187e8fe38';
-const SENDER_NAME = process.env.SEMAPHORE_SENDER_NAME || 'SEMAPHORE'; // Set to 'SEMAPHORE' by default for trial/unregistered sender names
+const SENDER_NAME = process.env.SEMAPHORE_SENDER_NAME || 'SEMAPHORE';
 
-// Database Connection Setup
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',      // Replace with your MySQL username
-    password: '123456',      // Replace with your MySQL password if set
-    database: 'e_barangay_db'
+// Production Database Pool Configuration (Aiven SSL + Fallback to Local)
+const db = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '123456',
+    database: process.env.DB_NAME || 'e_barangay_db',
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
+    ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false
 });
 
-db.connect((err) => {
+// Test Connection Pool
+db.getConnection((err, connection) => {
     if (err) {
-        console.error('Database connection failed: ', err.stack);
-        return;
+        console.error('Database connection failed: ', err.message);
+    } else {
+        console.log('Connected to MySQL Database successfully.');
+        connection.release();
     }
-    console.log('Connected to MySQL Database.');
 });
 
-// Helper Function: Format Philippine phone numbers for Semaphore (e.g., 639171234567 or 09171234567 -> 09171234567)
+// Helper Function: Format Philippine phone numbers for Semaphore
 function formatPhoneNumber(phone) {
     if (!phone) return null;
     let cleaned = phone.replace(/\D/g, ''); // Remove non-numeric characters
@@ -47,7 +51,6 @@ function formatPhoneNumber(phone) {
 
 // Real-Time Semaphore SMS Notification Dispatcher
 async function sendSMSNotification(userId, message) {
-    // 1. Fetch user contact details from DB
     const userSql = 'SELECT phone_number FROM users WHERE user_id = ?';
     db.query(userSql, [userId], async (err, results) => {
         if (err || results.length === 0) {
@@ -64,7 +67,6 @@ async function sendSMSNotification(userId, message) {
         }
 
         try {
-            // 2. Dispatch real-time SMS via Semaphore REST API
             const response = await axios.post(
                 'https://semaphore.co/api/v4/messages',
                 new URLSearchParams({
@@ -82,7 +84,6 @@ async function sendSMSNotification(userId, message) {
 
             console.log(`[SEMAPHORE SMS SUCCESS] Sent to ${recipientNumber} (User ID ${userId}): "${message}"`);
 
-            // 3. Log successfully sent SMS in Database
             const sqlLog = 'INSERT INTO sms_logs (user_id, message, status) VALUES (?, ?, "Sent")';
             db.query(sqlLog, [userId, message], (err) => {
                 if (err) console.error('Failed to log SMS update:', err);
@@ -92,7 +93,6 @@ async function sendSMSNotification(userId, message) {
             const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : error.message;
             console.error(`[SEMAPHORE SMS ERROR] Failed to send SMS to User ID ${userId}:`, errorMsg);
 
-            // Log failed SMS attempt in Database
             const sqlLog = 'INSERT INTO sms_logs (user_id, message, status) VALUES (?, ?, "Failed")';
             db.query(sqlLog, [userId, message], (err) => {
                 if (err) console.error('Failed to log SMS update:', err);
@@ -112,9 +112,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     try {
-        // Hash password before saving to database
         const hashedPassword = await bcrypt.hash(password, 10);
-
         const sql = 'INSERT INTO users (full_name, username, email, phone_number, password_hash, role) VALUES (?, ?, ?, ?, ?, "resident")';
         
         db.query(sql, [username, username, email, phone_number, hashedPassword], (err, result) => {
@@ -144,12 +142,10 @@ app.post('/api/auth/login', (req, res) => {
 
         const user = results[0];
 
-        // Check if account is actually a resident
         if (user.role !== 'resident') {
             return res.status(403).json({ error: 'Access denied. Please use the Admin Portal.' });
         }
 
-        // Verify bcrypt password hash
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid resident credentials.' });
@@ -182,13 +178,11 @@ app.post('/api/auth/admin-login', (req, res) => {
 
         const admin = results[0];
 
-        // Verify password hash
         const isMatch = await bcrypt.compare(password, admin.password_hash);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid admin credentials.' });
         }
 
-        // Strict role check
         if (admin.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied: Account is not authorized as an Admin.' });
         }
@@ -221,7 +215,6 @@ app.post('/api/requests', (req, res) => {
     db.query(sql, [user_id, doc_type_id, scheduled_date, scheduled_time_slot], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         
-        // Sends real SMS via Semaphore
         sendSMSNotification(user_id, `E-BARANGAY CONNECT: Your document request #${result.insertId} has been submitted for ${scheduled_date}.`);
         res.status(201).json({ message: 'Document request submitted successfully', requestId: result.insertId });
     });
@@ -242,7 +235,6 @@ app.patch('/api/requests/:id/status', (req, res) => {
         db.query(updateSql, [status, requestId], (err) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            // Custom automated message logic based on status provided by admin
             let smsMessage = `Update: Your request #${requestId} status is now "${status}".`;
 
             if (status === 'APPROVED_BOOK_APPOINTMENT' || status === 'Approved') {
@@ -251,15 +243,14 @@ app.patch('/api/requests/:id/status', (req, res) => {
                 smsMessage = `E-BARANGAY CONNECT: Your document request #${requestId} is READY FOR PICKUP at the Barangay Hall on your scheduled slot.`;
             }
 
-            // Sends real SMS via Semaphore
             sendSMSNotification(userId, smsMessage);
             res.json({ message: `Request #${requestId} status updated to ${status}` });
         });
     });
 });
 
-// Server Listener
-const PORT = 5000;
+// Dynamic Port Binding for Render Cloud Deployment
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`E-Barangay Connect server running on port ${PORT}`);
 });
