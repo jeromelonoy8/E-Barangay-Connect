@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Document System - Schedule Appointment</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Senior Mode Accessible Styles -->
+    <style id="senior-mode-styles">
+        body.senior-mode {
+            font-size: 1.15rem !important;
+            background-color: #f8fafc !important;
+        }
+
+        /* Enlarge Headings */
+        body.senior-mode h1 { font-size: 2.25rem !important; font-weight: 800 !important; }
+        body.senior-mode h2 { font-size: 1.5rem !important; }
+        body.senior-mode h3 { font-size: 1.25rem !important; }
+
+        /* Increase contrast and padding on interactive elements */
+        body.senior-mode button, 
+        body.senior-mode a,
+        body.senior-mode input,
+        body.senior-mode select {
+            font-size: 1.05rem !important;
+        }
+
+        /* Senior Mode High-Contrast Cards & Inputs */
+        body.senior-mode .form-card,
+        body.senior-mode .dash-card {
+            border: 2px solid #1e3a8a !important;
+            background-color: #ffffff !important;
+        }
+
+        body.senior-mode select,
+        body.senior-mode input {
+            border: 2px solid #1e3a8a !important;
+        }
+
+        body.senior-mode label,
+        body.senior-mode p, 
+        body.senior-mode span {
+            font-size: 1.05rem !important;
+            color: #0f172a !important;
+        }
+
+        body.senior-mode label {
+            font-weight: 700 !important;
+        }
+    </style>
+</head>
+<body id="appBody" class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
+                <i class="fa-solid fa-building-columns text-base"></i>
+                <span>Barangay Document System</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="dashboard.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-solid fa-border-all text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="new-request.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-square-plus text-xs"></i>
+                    <span>New Request</span>
+                </a>
+                <a href="status.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-clock text-xs"></i>
+                    <span>Status</span>
+                </a>
+                <a href="appointment.html" class="flex items-center space-x-2 text-white font-semibold">
+                    <i class="fa-regular fa-calendar text-xs"></i>
+                    <span>Appointment</span>
+                </a>
+                <a href="profile.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-user text-xs"></i>
+                    <span>Profile</span>
+                </a>
+
+                <!-- Senior Mode Toggle Button -->
+                <button id="seniorModeBtn" onclick="toggleSeniorMode()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-3 py-1 rounded-md text-xs flex items-center space-x-1 transition cursor-pointer">
+                    <i class="fa-regular fa-eye"></i>
+                    <span id="seniorBtnText">Senior Mode</span>
+                </button>
+
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 text-blue-100 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-3xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        
+        <!-- Page Header -->
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Schedule an Appointment</h1>
+            <p class="text-gray-500 text-sm mt-1">Book a visit to the barangay office and check live crowd counts before picking a time</p>
+        </div>
+
+        <!-- Dynamic Real-Time Weekly Crowd Forecast Card -->
+        <div class="dash-card bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3 border-gray-100">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-users text-[#1e3a8a]"></i>
+                    <h2 class="text-base font-bold text-gray-900">Live Weekly Resident Booking Count</h2>
+                </div>
+                <span class="text-xs text-emerald-600 font-bold flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
+                    Real-time Data
+                </span>
+            </div>
+
+            <!-- Forecast Pills Grid -->
+            <div id="weeklyForecastGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                <!-- Dynamically calculated from localStorage -->
+            </div>
+            
+            <p class="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i> <strong>Tip:</strong> Pick days with <strong class="text-emerald-600">Low Traffic</strong> for faster processing and shorter queues at the barangay hall.
+            </p>
+        </div>
+
+        <!-- Appointment Form Card -->
+        <div class="form-card bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <form onsubmit="handleAppointmentSubmit(event)" class="space-y-6">
+                
+                <!-- Purpose Selection -->
+                <div>
+                    <label for="visitPurpose" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Purpose of Visit <span class="text-red-500">*</span>
+                    </label>
+                    <select id="visitPurpose" required class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                        <option value="" disabled selected>Select purpose</option>
+                        <option value="Document Pickup (Barangay Clearance / Residency)">Document Pickup</option>
+                        <option value="In-person Consultation / Filing">In-person Consultation / Filing</option>
+                        <option value="Barangay Lupon / Mediation Hearing">Barangay Lupon / Mediation Hearing</option>
+                        <option value="Senior Citizen Services / Assistance">Senior Citizen Services / Assistance</option>
+                        <option value="Other Official Business">Other Official Business</option>
+                    </select>
+                </div>
+
+                <!-- Preferred Date Selection -->
+                <div>
+                    <label for="appointmentDate" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Preferred Date <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" id="appointmentDate" required onchange="handleDateChange()" class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                    
+                    <!-- Real-Time Date Crowd Summary Banner -->
+                    <div id="dateTrafficBanner" class="hidden mt-2 p-3 rounded-lg border text-xs font-semibold flex items-center justify-between">
+                        <span id="dateTrafficText">Selected Date Total: 0 Residents Booked</span>
+                        <span id="dateTrafficBadge" class="px-2 py-0.5 rounded-full text-[11px]">Recommended</span>
+                    </div>
+                </div>
+
+                <!-- Time Slot Selection -->
+                <div>
+                    <label for="timeSlot" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Time Slot <span class="text-red-500">*</span>
+                    </label>
+                    <select id="timeSlot" required disabled class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-gray-50 text-gray-500 focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                        <option value="" disabled selected>Select a date first</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="resetForm()" class="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-all cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-lg bg-[#1e3a8a] text-white font-semibold text-sm hover:bg-blue-800 transition-all shadow cursor-pointer">
+                        Book Appointment
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Office Hours Callout Banner -->
+        <div class="dash-card bg-blue-50/60 border border-blue-100 rounded-xl p-4 flex items-start space-x-3 text-xs text-blue-900">
+            <i class="fa-solid fa-circle-info text-blue-900 text-base mt-0.5"></i>
+            <div>
+                <p class="font-bold">Office Hours</p>
+                <p class="mt-0.5 text-slate-600">Monday - Friday: 8:00 AM - 5:00 PM</p>
+                <p class="text-slate-600">Saturday: Closed</p>
+                <p class="text-slate-600">Sunday: Closed</p>
+            </div>
+        </div>
+
+        <!-- My Booked Appointments List -->
+        <div class="dash-card bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3 border-gray-100">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-calendar-check text-[#1e3a8a]"></i>
+                    <h2 class="text-lg font-bold text-gray-900">My Booked Appointments</h2>
+                </div>
+                <span id="appointmentBadgeCount" class="text-xs bg-blue-100 text-blue-900 font-bold px-2.5 py-0.5 rounded-full">0 Scheduled</span>
+            </div>
+
+            <div id="appointmentsList" class="space-y-3">
+                <!-- Dynamically populated appointments -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const ALL_TIME_SLOTS = [
+            "08:30 AM - 09:30 AM",
+            "09:30 AM - 10:30 AM",
+            "10:30 AM - 11:30 AM",
+            "01:30 PM - 02:30 PM",
+            "02:30 PM - 03:30 PM",
+            "03:30 PM - 04:30 PM"
+        ];
+
+        const MAX_SLOT_CAPACITY = 10; // Maximum appointments allowed per time slot
+
+        // Initial default appointments for demonstration
+        const initialMockAppointments = [
+            { id: 'APT-1001', purpose: 'Document Pickup', date: getNextWeekdayDate(1), time: '08:30 AM - 09:30 AM', status: 'Confirmed' },
+            { id: 'APT-1002', purpose: 'In-person Consultation', date: getNextWeekdayDate(1), time: '08:30 AM - 09:30 AM', status: 'Confirmed' },
+            { id: 'APT-1003', purpose: 'Senior Citizen Assistance', date: getNextWeekdayDate(1), time: '09:30 AM - 10:30 AM', status: 'Confirmed' },
+            { id: 'APT-1004', purpose: 'Document Pickup', date: getNextWeekdayDate(1), time: '09:30 AM - 10:30 AM', status: 'Confirmed' },
+            { id: 'APT-1005', purpose: 'Document Pickup', date: getNextWeekdayDate(1), time: '09:30 AM - 10:30 AM', status: 'Confirmed' },
+            { id: 'APT-1006', purpose: 'Barangay Lupon Hearing', date: getNextWeekdayDate(2), time: '01:30 PM - 02:30 PM', status: 'Confirmed' },
+            { id: 'APT-1007', purpose: 'Document Pickup', date: getNextWeekdayDate(5), time: '08:30 AM - 09:30 AM', status: 'Confirmed' },
+            { id: 'APT-1008', purpose: 'Document Pickup', date: getNextWeekdayDate(5), time: '02:30 PM - 03:30 PM', status: 'Confirmed' }
+        ];
+
+        function getNextWeekdayDate(targetDayOfWeek) {
+            const today = new Date();
+            const result = new Date(today);
+            result.setDate(today.getDate() + ((targetDayOfWeek + 7 - today.getDay()) % 7));
+            return result.toISOString().split('T')[0];
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('appointmentDate');
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+
+            // Initialize local storage if empty
+            if (!localStorage.getItem('bookedAppointments')) {
+                localStorage.setItem('bookedAppointments', JSON.stringify(initialMockAppointments));
+            }
+
+            refreshRealTimeData();
+        });
+
+        // Main refresh function that updates both weekly cards and user's appointment list
+        function refreshRealTimeData() {
+            renderWeeklyRealTimeForecast();
+            renderBookedAppointments();
+            handleDateChange(); // Re-calculate time slot dropdown if a date is currently selected
+        }
+
+        // Calculates exact resident booking counts per day of week (1=Mon, ..., 6=Sat)
+        function renderWeeklyRealTimeForecast() {
+            const appointments = JSON.parse(localStorage.getItem('bookedAppointments')) || [];
+            const grid = document.getElementById('weeklyForecastGrid');
+
+            const days = [
+                { name: 'Monday', dayIndex: 1 },
+                { name: 'Tuesday', dayIndex: 2 },
+                { name: 'Wednesday', dayIndex: 3 },
+                { name: 'Thursday', dayIndex: 4 },
+                { name: 'Friday', dayIndex: 5 },
+                { name: 'Saturday', dayIndex: 6 }
+            ];
+
+            grid.innerHTML = days.map(day => {
+                // Count all residents booked on this day of week
+                const count = appointments.filter(apt => {
+                    const d = new Date(apt.date + 'T00:00:00');
+                    return d.getDay() === day.dayIndex;
+                }).length;
+
+                let cardBg = 'bg-emerald-50 border-emerald-200';
+                let badgeBg = 'bg-emerald-100 text-emerald-700';
+                let statusText = 'Low Traffic';
+                let textColor = 'text-emerald-600';
+
+                if (count >= 10) {
+                    cardBg = 'bg-red-50 border-red-200';
+                    badgeBg = 'bg-red-100 text-red-700';
+                    statusText = 'High Traffic';
+                    textColor = 'text-red-600';
+                } else if (count >= 4) {
+                    cardBg = 'bg-amber-50 border-amber-200';
+                    badgeBg = 'bg-amber-100 text-amber-800';
+                    statusText = 'Moderate';
+                    textColor = 'text-amber-700';
+                }
+
+                return `
+                    <div class="${cardBg} border rounded-xl p-3 text-center transition-all">
+                        <p class="text-xs font-bold text-gray-700">${day.name}</p>
+                        <span class="inline-block px-2 py-0.5 text-[10px] font-extrabold ${badgeBg} rounded-full mt-1.5">${statusText}</span>
+                        <p class="text-[10px] ${textColor} mt-1.5 font-bold">${count} Resident${count === 1 ? '' : 's'} Booked</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Real-time calculation when a user selects a date
+        function handleDateChange() {
+            const dateInput = document.getElementById('appointmentDate');
+            const timeSelect = document.getElementById('timeSlot');
+            const banner = document.getElementById('dateTrafficBanner');
+            const text = document.getElementById('dateTrafficText');
+            const badge = document.getElementById('dateTrafficBadge');
+
+            if (!dateInput.value) return;
+
+            const selectedDateStr = dateInput.value;
+            const selectedDate = new Date(selectedDateStr + 'T00:00:00');
+            const dayOfWeek = selectedDate.getDay();
+
+            if (dayOfWeek === 0) {
+                alert('The Barangay Office is closed on Sundays. Please select another date.');
+                dateInput.value = '';
+                timeSelect.disabled = true;
+                banner.classList.add('hidden');
+                return;
+            }
+
+            const appointments = JSON.parse(localStorage.getItem('bookedAppointments')) || [];
+            
+            // Filter appointments for the exact selected date
+            const dateAppointments = appointments.filter(apt => apt.date === selectedDateStr);
+            const totalDateBookings = dateAppointments.length;
+
+            banner.classList.remove('hidden', 'bg-emerald-50', 'bg-amber-50', 'bg-red-50', 'border-emerald-200', 'border-amber-200', 'border-red-200', 'text-emerald-800', 'text-amber-800', 'text-red-800');
+
+            if (totalDateBookings >= 12) {
+                banner.classList.add('bg-red-50', 'border-red-200', 'text-red-800');
+                text.innerText = `Selected Date Crowd Level: High Traffic (${totalDateBookings} residents booked)`;
+                badge.innerText = 'Busy Day';
+                badge.className = 'px-2 py-0.5 rounded-full text-[11px] bg-red-200 text-red-800 font-bold';
+            } else if (totalDateBookings >= 5) {
+                banner.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-800');
+                text.innerText = `Selected Date Crowd Level: Moderate Traffic (${totalDateBookings} residents booked)`;
+                badge.innerText = 'Average Turn-out';
+                badge.className = 'px-2 py-0.5 rounded-full text-[11px] bg-amber-200 text-amber-800 font-bold';
+            } else {
+                banner.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+                text.innerText = `Selected Date Crowd Level: Low Traffic (${totalDateBookings} resident${totalDateBookings === 1 ? '' : 's'} booked)`;
+                badge.innerText = 'Recommended';
+                badge.className = 'px-2 py-0.5 rounded-full text-[11px] bg-emerald-200 text-emerald-800 font-bold';
+            }
+
+            // Populate time slots with real-time occupancy
+            timeSelect.disabled = false;
+            timeSelect.classList.remove('bg-gray-50', 'text-gray-500');
+            timeSelect.classList.add('bg-white');
+            timeSelect.innerHTML = '<option value="" disabled selected>Select time slot (real-time availability)</option>';
+
+            ALL_TIME_SLOTS.forEach(slot => {
+                // Count residents booked for this exact time slot on this date
+                const slotCount = dateAppointments.filter(apt => apt.time === slot).length;
+                const opt = document.createElement('option');
+                opt.value = slot;
+
+                if (slotCount >= MAX_SLOT_CAPACITY) {
+                    opt.disabled = true;
+                    opt.innerText = `⛔ ${slot} — FULL (${slotCount}/${MAX_SLOT_CAPACITY} residents booked)`;
+                } else if (slotCount >= 5) {
+                    opt.innerText = `🔴 ${slot} — ${slotCount} residents booked (High Demand)`;
+                } else if (slotCount >= 2) {
+                    opt.innerText = `🟡 ${slot} — ${slotCount} residents booked (Moderate)`;
+                } else {
+                    opt.innerText = `🟢 ${slot} — ${slotCount} resident${slotCount === 1 ? '' : 's'} booked (Low Traffic)`;
+                }
+
+                timeSelect.appendChild(opt);
+            });
+        }
+
+        function handleAppointmentSubmit(e) {
+            e.preventDefault();
+
+            const purpose = document.getElementById('visitPurpose').value;
+            const date = document.getElementById('appointmentDate').value;
+            const time = document.getElementById('timeSlot').value;
+
+            const newAppt = {
+                id: 'APT-' + Math.floor(1000 + Math.random() * 9000),
+                purpose: purpose,
+                date: date,
+                time: time,
+                status: 'Confirmed'
+            };
+
+            let existingApps = JSON.parse(localStorage.getItem('bookedAppointments')) || [];
+            existingApps.unshift(newAppt);
+            localStorage.setItem('bookedAppointments', JSON.stringify(existingApps));
+
+            alert(`Appointment Successfully Scheduled!\n\nReference: ${newAppt.id}\nDate: ${date}\nTime: ${time}`);
+            resetForm();
+            refreshRealTimeData();
+        }
+
+        function resetForm() {
+            document.getElementById('visitPurpose').value = '';
+            document.getElementById('appointmentDate').value = '';
+            const timeSelect = document.getElementById('timeSlot');
+            timeSelect.value = '';
+            timeSelect.disabled = true;
+            timeSelect.classList.add('bg-gray-50', 'text-gray-500');
+            timeSelect.innerHTML = '<option value="" disabled selected>Select a date first</option>';
+            document.getElementById('dateTrafficBanner').classList.add('hidden');
+        }
+
+        function renderBookedAppointments() {
+            const container = document.getElementById('appointmentsList');
+            const badgeCount = document.getElementById('appointmentBadgeCount');
+
+            let appointments = JSON.parse(localStorage.getItem('bookedAppointments')) || [];
+
+            badgeCount.innerText = `${appointments.length} Scheduled`;
+
+            if (appointments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fa-regular fa-calendar-xmark text-4xl mb-2 block"></i>
+                        <p class="text-sm">No upcoming appointments booked yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appointments.map((apt, index) => `
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold bg-[#1e3a8a] text-white px-2 py-0.5 rounded">${apt.id}</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${apt.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                ${apt.status}
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-gray-900 text-sm mt-1">${apt.purpose}</h3>
+                        <div class="flex items-center space-x-4 text-xs text-gray-600 font-medium pt-1">
+                            <span><i class="fa-regular fa-calendar text-blue-900 mr-1"></i> ${apt.date}</span>
+                            <span><i class="fa-regular fa-clock text-blue-900 mr-1"></i> ${apt.time}</span>
+                        </div>
+                    </div>
+
+                    <button onclick="cancelAppointment(${index})" class="self-end md:self-center px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition border border-red-200 flex items-center space-x-1 cursor-pointer">
+                        <i class="fa-regular fa-trash-can"></i>
+                        <span>Cancel</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function cancelAppointment(index) {
+            if (confirm('Are you sure you want to cancel this appointment?')) {
+                let appointments = JSON.parse(localStorage.getItem('bookedAppointments')) || [];
+                appointments.splice(index, 1);
+                localStorage.setItem('bookedAppointments', JSON.stringify(appointments));
+                refreshRealTimeData();
+            }
+        }
+
+        // Senior Mode Logic
+        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
+
+        function applySeniorMode() {
+            const btnText = document.getElementById('seniorBtnText');
+            const btn = document.getElementById('seniorModeBtn');
+
+            if (seniorModeActive) {
+                document.body.classList.add('senior-mode');
+                if (btnText) btnText.innerText = "Disable Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
+                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                }
+            } else {
+                document.body.classList.remove('senior-mode');
+                if (btnText) btnText.innerText = "Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
+                }
+            }
+        }
+
+        function toggleSeniorMode() {
+            seniorModeActive = !seniorModeActive;
+            localStorage.setItem('senior_mode_active', seniorModeActive);
+            applySeniorMode();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('residentUser');
+            window.location.href = 'index.html';
+        }
+
+        applySeniorMode();
+    </script>
+</body>
+</html>

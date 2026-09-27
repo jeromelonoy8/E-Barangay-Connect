@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements - Barangay Admin Portal</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
+                <span>Barangay Admin Portal</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="admin-dashboard.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-solid fa-border-all text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="manage-requests.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-file-lines text-xs"></i>
+                    <span>Manage Requests</span>
+                </a>
+                <a href="announcements.html" class="flex items-center space-x-2 text-white font-semibold">
+                    <i class="fa-solid fa-bullhorn text-xs"></i>
+                    <span>Announcements</span>
+                </a>
+                <a href="add-official.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-solid fa-user-plus text-xs"></i>
+                    <span>Add Official</span>
+                </a>
+
+                <!-- Profile Link & Button -->
+                <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800/80 pl-4">
+                    <div id="navAvatarContainer" class="w-8 h-8 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center text-xs font-bold overflow-hidden shrink-0 border border-white/20">
+                        <span id="navAvatarInitial">A</span>
+                    </div>
+                    <span id="navProfileName">Profile</span>
+                </button>
+
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 text-blue-100 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Barangay Announcements</h1>
+                <p class="text-slate-500 text-xs mt-1">Post updates, advisories, and notices for community residents.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Create Announcement Form -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 h-fit">
+                <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-pen-to-square text-[#1e3a8a]"></i>
+                    <span>Post New Notice</span>
+                </h2>
+
+                <form id="announcementForm" onsubmit="handlePostAnnouncement(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Title *</label>
+                        <input type="text" id="announcementTitle" required placeholder="Notice Title"
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
+                        <select id="announcementCategory" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                            <option value="General News">General News</option>
+                            <option value="Emergency Advisory">Emergency Advisory</option>
+                            <option value="Health Notice">Health Notice</option>
+                            <option value="Community Event">Community Event</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Content / Message *</label>
+                        <textarea id="announcementBody" required rows="4" placeholder="Write full details here..."
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                        <span>Publish Announcement</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Published Announcements List -->
+            <div class="lg:col-span-2 space-y-4">
+                <h2 class="text-base font-bold text-slate-900">Active Advisories</h2>
+                <div id="announcementsContainer" class="space-y-4"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Admin Profile Modal -->
+    <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0">A</div>
+                        <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
+                        <p id="modalProfileRole" class="text-[11px] text-blue-200">System Admin</p>
+                    </div>
+                </div>
+                <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5">
+                <input type="file" id="profilePicInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+
+                <form id="profileDetailsForm" onsubmit="handleSaveProfileDetails(event)" class="space-y-3">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Details</h4>
+                    
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Username</label>
+                        <input type="text" id="profileUsername" disabled
+                            class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Email Address *</label>
+                        <input type="email" id="profileEmail" required placeholder="official@barangay.gov.ph"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
+                        <input type="tel" id="profilePhone" required placeholder="09123456789"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+
+                    <div class="pt-1 flex justify-end">
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition">
+                            Save Details
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="border-slate-100">
+
+                <form id="changePasswordForm" onsubmit="handleChangePassword(event)" class="space-y-3">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Security & Password</h4>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Current Password</label>
+                        <input type="password" id="currentPassword" required placeholder="Enter current password"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Password</label>
+                        <input type="password" id="newPassword" required placeholder="Enter new password"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" required placeholder="Confirm new password"
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div id="modalAlert" class="hidden text-xs text-center py-2 px-3 rounded-lg font-medium"></div>
+
+                    <div class="pt-2 flex space-x-2">
+                        <button type="button" onclick="closeProfileModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
+                            Close
+                        </button>
+                        <button type="submit" class="w-1/2 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">
+                            Update Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
+            window.location.replace('admin.html');
+        }
+
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupNavbarProfile();
+            loadAnnouncements();
+        });
+
+        // Helper to retrieve image from any common localStorage property
+        function getAdminProfilePic(admin) {
+            if (!admin) return null;
+
+            // Direct key check on admin object
+            if (admin.profilePic) return admin.profilePic;
+            if (admin.avatar) return admin.avatar;
+            if (admin.image) return admin.image;
+            if (admin.photo) return admin.photo;
+
+            // Check matching entry in barangayOfficials array
+            const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
+            const official = storedOfficials.find(o => 
+                (admin.username && o.username === admin.username) || 
+                (admin.name && o.name === admin.name)
+            );
+
+            if (official) {
+                return official.profilePic || official.avatar || official.image || official.photo || null;
+            }
+
+            return null;
+        }
+
+        function setupNavbarProfile() {
+            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            const navName = document.getElementById('navProfileName');
+            const navAvatarContainer = document.getElementById('navAvatarContainer');
+
+            if (currentAdmin.name && navName) {
+                navName.innerText = currentAdmin.name;
+            }
+
+            const picUrl = getAdminProfilePic(currentAdmin);
+
+            if (picUrl) {
+                navAvatarContainer.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover rounded-full">`;
+            } else if (currentAdmin.name) {
+                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">${currentAdmin.name.charAt(0).toUpperCase()}</span>`;
+            } else {
+                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">A</span>`;
+            }
+        }
+
+        function loadAnnouncements() {
+            const container = document.getElementById('announcementsContainer');
+            const stored = localStorage.getItem('barangayAnnouncements');
+            const list = stored ? JSON.parse(stored) : [
+                { id: 1, title: 'Barangay Clean-Up Drive', category: 'Community Event', body: 'Join us this coming Saturday for the village-wide clean up drive starting at 6:00 AM.', date: '2026-09-20' },
+                { id: 2, title: 'Free Medical Consultation', category: 'Health Notice', body: 'Free health checkups and basic medicines available at the Barangay Health Center this Friday.', date: '2026-09-18' }
+            ];
+
+            if (list.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-bullhorn text-3xl text-slate-300 mb-2 block"></i>
+                        <p class="text-xs text-slate-500 font-medium">No announcements published yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = list.map((item, idx) => `
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1e3a8a] border border-blue-100">${item.category}</span>
+                            <h3 class="text-sm font-bold text-slate-900 mt-2">${item.title}</h3>
+                        </div>
+                        <button onclick="deleteAnnouncement(${idx})" title="Delete Notice" class="text-rose-400 hover:text-rose-600 p-1 transition">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed">${item.body}</p>
+                    <p class="text-[10px] font-medium text-slate-400 pt-2 border-t border-slate-100">Posted on ${item.date || '2026-09-23'}</p>
+                </div>
+            `).join('');
+        }
+
+        function handlePostAnnouncement(event) {
+            event.preventDefault();
+            const title = document.getElementById('announcementTitle').value.trim();
+            const category = document.getElementById('announcementCategory').value;
+            const body = document.getElementById('announcementBody').value.trim();
+
+            const stored = localStorage.getItem('barangayAnnouncements');
+            const list = stored ? JSON.parse(stored) : [];
+
+            list.unshift({ id: Date.now(), title, category, body, date: '2026-09-23' });
+            localStorage.setItem('barangayAnnouncements', JSON.stringify(list));
+
+            document.getElementById('announcementForm').reset();
+            loadAnnouncements();
+        }
+
+        function deleteAnnouncement(index) {
+            const stored = localStorage.getItem('barangayAnnouncements');
+            if (!stored) return;
+            let list = JSON.parse(stored);
+
+            if (confirm('Are you sure you want to delete this announcement?')) {
+                list.splice(index, 1);
+                localStorage.setItem('barangayAnnouncements', JSON.stringify(list));
+                loadAnnouncements();
+            }
+        }
+
+        /* --- Profile Modal, Avatar Upload & Password Functions --- */
+        function openProfileModal() {
+            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            document.getElementById('modalProfileName').innerText = currentAdmin.name || 'Admin User';
+            document.getElementById('modalProfileRole').innerText = currentAdmin.role || 'Barangay Official';
+            document.getElementById('profileUsername').value = `@${currentAdmin.username || 'admin'}`;
+            document.getElementById('profileEmail').value = currentAdmin.email || '';
+            document.getElementById('profilePhone').value = currentAdmin.phone || '';
+
+            const avatarElem = document.getElementById('modalAvatar');
+            const picUrl = getAdminProfilePic(currentAdmin);
+
+            if (picUrl) {
+                avatarElem.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover rounded-full">`;
+            } else {
+                avatarElem.innerText = (currentAdmin.name || 'A').charAt(0).toUpperCase();
+            }
+
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('modalAlert').classList.add('hidden');
+
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                
+                // Update avatar in modal
+                document.getElementById('modalAvatar').innerHTML = `<img src="${base64Image}" class="w-full h-full object-cover rounded-full">`;
+
+                // Save across all possible avatar keys for full compatibility
+                let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
+                currentAdmin.profilePic = base64Image;
+                currentAdmin.avatar = base64Image;
+                currentAdmin.image = base64Image;
+                localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
+
+                // Sync with officials database
+                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
+                const idx = storedOfficials.findIndex(o => 
+                    (currentAdmin.username && o.username === currentAdmin.username) || 
+                    (currentAdmin.name && o.name === currentAdmin.name)
+                );
+                if (idx !== -1) {
+                    storedOfficials[idx].profilePic = base64Image;
+                    storedOfficials[idx].avatar = base64Image;
+                    storedOfficials[idx].image = base64Image;
+                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
+                }
+
+                // Refresh navbar icon immediately
+                setupNavbarProfile();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleSaveProfileDetails(event) {
+            event.preventDefault();
+            const alertBox = document.getElementById('modalAlert');
+            const email = document.getElementById('profileEmail').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+
+            let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            currentAdmin.email = email;
+            currentAdmin.phone = phone;
+
+            localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
+
+            if (currentAdmin.username !== 'admin') {
+                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
+                const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
+                if (idx !== -1) {
+                    storedOfficials[idx].email = email;
+                    storedOfficials[idx].phone = phone;
+                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
+                }
+            }
+
+            showModalAlert(alertBox, 'Profile details saved successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
+        }
+
+        function handleChangePassword(event) {
+            event.preventDefault();
+            const alertBox = document.getElementById('modalAlert');
+            const currentPassInput = document.getElementById('currentPassword').value;
+            const newPassInput = document.getElementById('newPassword').value;
+            const confirmPassInput = document.getElementById('confirmPassword').value;
+
+            if (newPassInput !== confirmPassInput) {
+                showModalAlert(alertBox, 'New passwords do not match.', 'bg-rose-100 text-rose-800 border border-rose-300');
+                return;
+            }
+
+            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
+            let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
+
+            if (currentAdmin.username === 'admin') {
+                showModalAlert(alertBox, 'Password updated successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
+                setTimeout(closeProfileModal, 1000);
+                return;
+            }
+
+            const officialIndex = storedOfficials.findIndex(acc => acc.username === currentAdmin.username);
+
+            if (officialIndex !== -1) {
+                if (storedOfficials[officialIndex].password !== currentPassInput) {
+                    showModalAlert(alertBox, 'Current password is incorrect.', 'bg-rose-100 text-rose-800 border border-rose-300');
+                    return;
+                }
+
+                storedOfficials[officialIndex].password = newPassInput;
+                localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
+
+                showModalAlert(alertBox, 'Password changed successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
+                setTimeout(closeProfileModal, 1200);
+            }
+        }
+
+        function showModalAlert(element, text, classes) {
+            element.className = `text-xs text-center py-2 px-3 rounded-lg font-medium ${classes}`;
+            element.innerText = text;
+            element.classList.remove('hidden');
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('isAdminLoggedIn');
+            localStorage.removeItem('adminUser');
+            sessionStorage.clear();
+            window.location.replace('admin.html');
+        }
+    </script>
+</body>
+</html>

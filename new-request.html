@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Document System - New Request</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Senior Mode Accessible Styles -->
+    <style id="senior-mode-styles">
+        body.senior-mode {
+            font-size: 1.15rem !important;
+            background-color: #f8fafc !important;
+        }
+
+        body.senior-mode h1 { font-size: 2.25rem !important; font-weight: 800 !important; }
+        body.senior-mode h2 { font-size: 1.5rem !important; }
+
+        body.senior-mode button, 
+        body.senior-mode a,
+        body.senior-mode select,
+        body.senior-mode textarea,
+        body.senior-mode input {
+            font-size: 1.05rem !important;
+        }
+
+        body.senior-mode label,
+        body.senior-mode p, 
+        body.senior-mode span {
+            font-size: 1.05rem !important;
+            color: #0f172a !important;
+        }
+    </style>
+</head>
+<body id="appBody" class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
+                <i class="fa-solid fa-building-columns text-base"></i>
+                <span>Barangay Document System</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="dashboard.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-solid fa-border-all text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="new-request.html" class="flex items-center space-x-2 text-white font-semibold">
+                    <i class="fa-regular fa-square-plus text-xs"></i>
+                    <span>New Request</span>
+                </a>
+                <a href="status.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-clock text-xs"></i>
+                    <span>Status</span>
+                </a>
+                <a href="appointment.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-calendar text-xs"></i>
+                    <span>Appointment</span>
+                </a>
+                <a href="profile.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-user text-xs"></i>
+                    <span>Profile</span>
+                </a>
+
+                <!-- Senior Mode Toggle Button -->
+                <button id="seniorModeBtn" onclick="toggleSeniorMode()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-3 py-1 rounded-md text-xs flex items-center space-x-1 transition cursor-pointer">
+                    <i class="fa-regular fa-eye"></i>
+                    <span id="seniorBtnText">Senior Mode</span>
+                </button>
+
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 text-blue-100 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-3xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+        
+        <!-- Header -->
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">New Document Request</h1>
+            <p class="text-gray-500 text-sm mt-1">Fill out the required information and upload supporting IDs or files.</p>
+        </div>
+
+        <!-- Request Form Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+            <form id="newRequestForm" onsubmit="handleFormSubmit(event)" class="space-y-6">
+
+                <!-- Document Type Selection -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                        Document Type <span class="text-red-500">*</span>
+                    </label>
+                    <select id="documentType" onchange="handleDocumentTypeChange()" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1e3a8a] bg-white text-slate-800 cursor-pointer">
+                        <option value="" disabled selected>Select a document type</option>
+                        <option value="Barangay Clearance">Barangay Clearance</option>
+                        <option value="Certificate of Residency">Certificate of Residency</option>
+                        <option value="Certificate of Indigency">Certificate of Indigency</option>
+                        <option value="Business Permit Clearance">Business Permit Clearance</option>
+                        <option value="Barangay ID">Barangay ID</option>
+                        <option value="Good Moral Certificate">Good Moral Certificate</option>
+                    </select>
+                </div>
+
+                <!-- Dynamic Requirements Box (Appears when Document Type is chosen) -->
+                <div id="requirementsBox" class="hidden bg-blue-50/60 border border-blue-100 rounded-xl p-4 transition-all duration-200">
+                    <div class="flex items-center space-x-2 text-[#1e3a8a] font-bold text-xs mb-2">
+                        <i class="fa-solid fa-circle-info text-sm"></i>
+                        <span>Requirements for <span id="reqDocTitle">this document</span>:</span>
+                    </div>
+                    <ul id="reqList" class="list-disc list-inside text-xs text-slate-700 space-y-1 pl-1">
+                        <!-- Populated dynamically via JS -->
+                    </ul>
+                </div>
+
+                <!-- Purpose Field -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                        Purpose <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="requestPurpose" required rows="3" placeholder="Specify why you are requesting this document..."
+                              class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1e3a8a] resize-y text-slate-800"></textarea>
+                </div>
+
+                <!-- Upload Section -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                        Attach Files / Valid ID <span class="text-red-500">*</span>
+                    </label>
+                    
+                    <div onclick="document.getElementById('fileInput').click()" 
+                         class="border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3">
+                        <div class="w-12 h-12 bg-blue-100/60 text-[#1e3a8a] rounded-full flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">Click or drag files here to upload</p>
+                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">PNG, JPG, or PDF files accepted</p>
+                        </div>
+                        <input type="file" id="fileInput" onchange="handleFileSelection(event)" class="hidden" accept="image/*,.pdf" required>
+                    </div>
+
+                    <!-- Selected File Preview Bar -->
+                    <div id="filePreviewContainer" class="hidden mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5 truncate">
+                            <i class="fa-regular fa-file-image text-[#1e3a8a] text-base"></i>
+                            <span id="selectedFileName" class="text-xs font-semibold text-slate-800 truncate">filename.png</span>
+                        </div>
+                        <button type="button" onclick="removeSelectedFile()" class="text-slate-400 hover:text-red-600 transition text-sm cursor-pointer px-2">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 px-6 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-sm transition cursor-pointer">
+                    <i class="fa-regular fa-paper-plane text-xs"></i>
+                    <span>Submit Request</span>
+                </button>
+
+            </form>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // Requirements Data Dictionary
+        const documentRequirements = {
+            "Barangay Clearance": [
+                "1 Valid Government-issued ID (e.g., Passport, Driver's License, UMID)",
+                "Proof of Residency (e.g., Utility bill or Barangay Certificate)",
+                "Community Tax Certificate (Cedula)"
+            ],
+            "Certificate of Residency": [
+                "1 Valid Government-issued ID showing local address",
+                "Proof of continuous residency for at least 6 months"
+            ],
+            "Certificate of Indigency": [
+                "1 Valid Government ID",
+                "Oath or Affidavit of Low Income Status / Endorsement from Social Worker"
+            ],
+            "Business Permit Clearance": [
+                "DTI / SEC Registration Certificate",
+                "Contract of Lease or Land Title",
+                "Mayor's Permit Application form"
+            ],
+            "Barangay ID": [
+                "1 Primary ID or Birth Certificate (PSA)",
+                "1x1 or 2x2 ID photo with white background",
+                "Proof of Billing/Residency"
+            ],
+            "Good Moral Certificate": [
+                "1 Valid Government-issued ID",
+                "Endorsement letter from school, employer, or Barangay Kagawad"
+            ]
+        };
+
+        let currentBase64File = null;
+        let currentFileName = "";
+
+        // Handle Requirements display on dropdown selection change
+        function handleDocumentTypeChange() {
+            const selectEl = document.getElementById('documentType');
+            const selectedDoc = selectEl.value;
+            const reqBox = document.getElementById('requirementsBox');
+            const reqTitle = document.getElementById('reqDocTitle');
+            const reqList = document.getElementById('reqList');
+
+            if (selectedDoc && documentRequirements[selectedDoc]) {
+                reqTitle.innerText = selectedDoc;
+                reqList.innerHTML = documentRequirements[selectedDoc]
+                    .map(item => `<li class="font-medium">${item}</li>`)
+                    .join('');
+                reqBox.classList.remove('hidden');
+            } else {
+                reqBox.classList.add('hidden');
+            }
+        }
+
+        // Handle File Input Selection
+        function handleFileSelection(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentFileName = file.name;
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                currentBase64File = e.target.result;
+                document.getElementById('selectedFileName').innerText = currentFileName;
+                document.getElementById('filePreviewContainer').classList.remove('hidden');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function removeSelectedFile() {
+            document.getElementById('fileInput').value = '';
+            currentBase64File = null;
+            currentFileName = "";
+            document.getElementById('filePreviewContainer').classList.add('hidden');
+        }
+
+        // Save Request to localStorage
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const docType = document.getElementById('documentType').value;
+            const purpose = document.getElementById('requestPurpose').value.trim();
+
+            if (!docType || !purpose) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            const storedRequests = localStorage.getItem('documentRequests');
+            let requests = storedRequests ? JSON.parse(storedRequests) : [];
+
+            const newId = `REQ-00${requests.length + 1}`;
+            const today = new Date().toISOString().split('T')[0];
+
+            const newRequestObj = {
+                id: newId,
+                residentName: "Jerome Lonoy",
+                documentType: docType,
+                purpose: purpose,
+                dateSubmitted: today,
+                status: "Pending",
+                files: [
+                    {
+                        name: currentFileName || "Attached_Document.png",
+                        dataUrl: currentBase64File || ""
+                    }
+                ]
+            };
+
+            requests.unshift(newRequestObj);
+            localStorage.setItem('documentRequests', JSON.stringify(requests));
+
+            alert(`Your request (${newId}) for ${docType} has been submitted successfully!`);
+            window.location.href = 'status.html';
+        }
+
+        // Senior Mode Logic
+        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
+
+        function applySeniorMode() {
+            const btnText = document.getElementById('seniorBtnText');
+            const btn = document.getElementById('seniorModeBtn');
+
+            if (seniorModeActive) {
+                document.body.classList.add('senior-mode');
+                if (btnText) btnText.innerText = "Disable Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
+                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                }
+            } else {
+                document.body.classList.remove('senior-mode');
+                if (btnText) btnText.innerText = "Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
+                }
+            }
+        }
+
+        function toggleSeniorMode() {
+            seniorModeActive = !seniorModeActive;
+            localStorage.setItem('senior_mode_active', seniorModeActive);
+            applySeniorMode();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('residentUser');
+            window.location.href = 'index.html';
+        }
+
+        applySeniorMode();
+    </script>
+</body>
+</html>

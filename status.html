@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Document System - Request Status</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Senior Mode Accessible Styles -->
+    <style id="senior-mode-styles">
+        body.senior-mode {
+            font-size: 1.15rem !important;
+            background-color: #f8fafc !important;
+        }
+
+        /* Enlarge Headings */
+        body.senior-mode h1 { font-size: 2.25rem !important; font-weight: 800 !important; }
+        body.senior-mode h2 { font-size: 1.5rem !important; }
+
+        /* Interactive elements */
+        body.senior-mode button, 
+        body.senior-mode a {
+            font-size: 1.05rem !important;
+        }
+
+        /* Senior Mode High-Contrast Cards */
+        body.senior-mode .status-card {
+            border: 2px solid #1e3a8a !important;
+            background-color: #ffffff !important;
+        }
+
+        body.senior-mode label,
+        body.senior-mode p, 
+        body.senior-mode span {
+            font-size: 1.05rem !important;
+            color: #0f172a !important;
+        }
+    </style>
+</head>
+<body id="appBody" class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
+                <i class="fa-solid fa-building-columns text-base"></i>
+                <span>Barangay Document System</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="dashboard.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-solid fa-border-all text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="new-request.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-square-plus text-xs"></i>
+                    <span>New Request</span>
+                </a>
+                <a href="status.html" class="flex items-center space-x-2 text-white font-semibold">
+                    <i class="fa-regular fa-clock text-xs"></i>
+                    <span>Status</span>
+                </a>
+                <a href="appointment.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-calendar text-xs"></i>
+                    <span>Appointment</span>
+                </a>
+                <a href="profile.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-user text-xs"></i>
+                    <span>Profile</span>
+                </a>
+
+                <!-- Senior Mode Toggle Button -->
+                <button id="seniorModeBtn" onclick="toggleSeniorMode()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-3 py-1 rounded-md text-xs flex items-center space-x-1 transition cursor-pointer">
+                    <i class="fa-regular fa-eye"></i>
+                    <span id="seniorBtnText">Senior Mode</span>
+                </button>
+
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 text-blue-100 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+        
+        <!-- Page Header -->
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Request Status</h1>
+            <p class="text-gray-500 text-sm mt-1">Track the status of your document requests, view submitted attachments, or manage your requests</p>
+        </div>
+
+        <!-- Dynamic Request Status List -->
+        <div id="requestsListContainer" class="space-y-4">
+            <!-- Populated via JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- Modal for Viewing Submitted File Preview -->
+    <div id="fileModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-file-contract text-[#1e3a8a]"></i>
+                    <h3 class="font-bold text-gray-900 text-base" id="modalFileName">Submitted Document</h3>
+                </div>
+                <button onclick="closeFileModal()" class="text-gray-400 hover:text-gray-600 text-lg cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="modalFileContent" class="py-2">
+                <!-- Visual Document Card Rendered Here -->
+            </div>
+
+            <div class="flex justify-between items-center pt-3 border-t border-slate-100">
+                <span class="text-xs text-slate-400"><i class="fa-solid fa-lock mr-1"></i> Secure File View</span>
+                <button onclick="closeFileModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition cursor-pointer">
+                    Close Preview
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderRequests();
+        });
+
+        function renderRequests() {
+            const container = document.getElementById('requestsListContainer');
+            const storedData = localStorage.getItem('documentRequests');
+            let requests = storedData ? JSON.parse(storedData) : [];
+
+            if (!Array.isArray(requests) || requests.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                        <i class="fa-regular fa-folder-open text-4xl text-slate-300"></i>
+                        <div>
+                            <p class="text-gray-700 font-bold text-base">No document requests found</p>
+                            <p class="text-gray-400 text-xs mt-0.5">Submit a new request to track its progress here.</p>
+                        </div>
+                        <a href="new-request.html" class="inline-block mt-2 text-xs bg-[#1e3a8a] text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-800 transition">
+                            <i class="fa-regular fa-square-plus mr-1"></i> Create Request
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requests.map((req, index) => {
+                // Property fallbacks to guarantee exact display from submitted form fields
+                const docName = req.documentType || req.documentName || req.document || req.type || 'Barangay Clearance';
+                const submissionDate = req.dateSubmitted || req.submittedDate || req.date || new Date().toISOString().split('T')[0];
+                const notes = req.statusNotes || req.notes || req.remarks || 'Your request has been received and is currently under review.';
+                const reqPurpose = req.purpose || req.reason || 'Not specified';
+                const reqStatus = req.status || 'Pending';
+                const reqId = req.id || `REQ-00${index + 1}`;
+
+                let badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
+                if (reqStatus === 'Approved') {
+                    badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                } else if (reqStatus === 'Rejected') {
+                    badgeStyle = 'bg-red-100 text-red-800 border-red-200';
+                }
+
+                // File Attachment Parsing
+                let filesList = req.submittedFiles || req.files || req.file || [];
+                if (typeof filesList === 'string') {
+                    filesList = [{ name: filesList, type: 'image', desc: 'Uploaded Attachment' }];
+                }
+
+                return `
+                    <div class="status-card bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                        
+                        <!-- Top Header: ID, Status Badge, Date & Delete Button -->
+                        <div class="flex items-center justify-between border-b pb-3 border-gray-100">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-xs font-bold bg-[#1e3a8a] text-white px-2.5 py-0.5 rounded">${reqId}</span>
+                                <span class="text-xs font-bold px-3 py-0.5 rounded-full border ${badgeStyle}">
+                                    ${reqStatus}
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4">
+                                <span class="text-xs text-gray-400 font-medium">
+                                    <i class="fa-regular fa-calendar mr-1"></i> Submitted on ${submissionDate}
+                                </span>
+                                <!-- DELETE ACTION BUTTON -->
+                                <button onclick="deleteRequest('${reqId}', ${index})" title="Delete Request" class="text-slate-400 hover:text-red-600 transition p-1 text-sm cursor-pointer">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Document Title & Purpose -->
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+                                <i class="fa-regular fa-file-lines text-[#1e3a8a]"></i>
+                                <span>${docName}</span>
+                            </h2>
+                            <p class="text-xs text-gray-500 mt-1 font-medium">Purpose: ${reqPurpose}</p>
+                        </div>
+
+                        <!-- General Status Notes -->
+                        <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5 text-xs text-blue-900 flex items-start space-x-2.5">
+                            <i class="fa-solid fa-circle-info text-blue-800 text-sm mt-0.5"></i>
+                            <div>
+                                <p class="font-bold text-blue-900">Status Notes:</p>
+                                <p class="text-slate-600 mt-0.5">${notes}</p>
+                            </div>
+                        </div>
+
+                        <!-- REJECTION REASON BOX (Only shown if status is Rejected) -->
+                        ${reqStatus === 'Rejected' && req.rejectionReason ? `
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-3.5 text-xs text-red-900 flex items-start space-x-2.5">
+                                <i class="fa-solid fa-circle-xmark text-red-600 text-base mt-0.5"></i>
+                                <div>
+                                    <p class="font-bold text-red-900">Reason for Rejection:</p>
+                                    <p class="text-red-700 mt-0.5 font-medium">${req.rejectionReason}</p>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- SUBMITTED ATTACHMENT DISPLAY -->
+                        <div class="pt-3 border-t border-slate-100">
+                            ${filesList.length > 0 ? 
+                                filesList.map(file => {
+                                    const fileName = typeof file === 'string' ? file : (file.name || 'Submitted_Attachment.png');
+                                    const fileType = file.type || (fileName.toLowerCase().endsWith('.pdf') ? 'document' : 'image');
+                                    const fileDesc = file.desc || 'Submitted Attachment';
+                                    
+                                    return `
+                                        <div class="flex items-center justify-between py-1">
+                                            <div class="flex items-center space-x-2 text-xs font-semibold text-slate-600">
+                                                <i class="fa-regular ${fileType === 'document' ? 'fa-file-pdf text-red-500' : 'fa-file-image text-slate-400'}"></i>
+                                                <span>${fileName}</span>
+                                            </div>
+                                            <button onclick="viewFileModal('${fileName}', '${fileType}', '${fileDesc}')" class="text-xs font-bold text-[#1e3a8a] hover:text-blue-800 flex items-center space-x-1 cursor-pointer">
+                                                <i class="fa-regular fa-eye"></i>
+                                                <span>View File</span>
+                                            </button>
+                                        </div>
+                                    `;
+                                }).join('') : `
+                                    <div class="flex items-center justify-between py-1">
+                                        <span class="text-xs text-gray-400 italic">No attached files</span>
+                                    </div>
+                                `
+                            }
+                        </div>
+
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Delete Request Function
+        function deleteRequest(id, index) {
+            if (confirm(`Are you sure you want to delete request ${id}?`)) {
+                let requests = JSON.parse(localStorage.getItem('documentRequests')) || [];
+                requests = requests.filter((item, i) => (item.id ? item.id !== id : i !== index));
+                localStorage.setItem('documentRequests', JSON.stringify(requests));
+                renderRequests();
+            }
+        }
+
+        // Modal Preview Window
+        function viewFileModal(fileName, fileType, fileDesc) {
+            const modal = document.getElementById('fileModal');
+            const title = document.getElementById('modalFileName');
+            const content = document.getElementById('modalFileContent');
+
+            title.innerText = fileName;
+
+            if (fileType === 'image') {
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-5 rounded-xl border border-blue-800 shadow-inner relative overflow-hidden">
+                            <div class="flex justify-between items-start border-b border-blue-700/60 pb-3 mb-3">
+                                <div>
+                                    <p class="text-[10px] uppercase font-semibold text-blue-200 tracking-wider">Republic of the Philippines</p>
+                                    <p class="text-xs font-bold text-white">REPUBLIC VALID IDENTIFICATION</p>
+                                </div>
+                                <i class="fa-solid fa-id-card text-2xl text-blue-300 opacity-80"></i>
+                            </div>
+
+                            <div class="flex items-center space-x-4">
+                                <div class="w-16 h-20 bg-blue-100/20 rounded border border-blue-400/40 flex flex-col items-center justify-center text-blue-200">
+                                    <i class="fa-solid fa-user text-3xl"></i>
+                                    <span class="text-[8px] mt-1 text-blue-300 font-mono">PHOTO</span>
+                                </div>
+                                <div class="space-y-1 text-xs">
+                                    <p class="font-bold text-amber-300 text-sm">RESIDENT ATTACHMENT</p>
+                                    <p class="text-[10px] text-blue-200">File Name: ${fileName}</p>
+                                    <p class="text-[10px] text-blue-200">Status: Uploaded & Encrypted</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 pt-2 border-t border-blue-700/60 flex justify-between items-center text-[9px] text-blue-200">
+                                <span>VERIFIED RESIDENT ATTACHMENT</span>
+                                <span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check"></i> UPLOADED FILE</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center font-medium">${fileDesc}</p>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-xl space-y-3 text-left">
+                            <div class="flex items-center justify-between border-b pb-2 border-slate-200">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-file-pdf text-red-600 text-xl"></i>
+                                    <span class="text-xs font-bold text-gray-800">${fileName}</span>
+                                </div>
+                                <span class="text-[10px] font-bold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">PDF Document</span>
+                            </div>
+
+                            <div class="space-y-2 text-xs text-slate-600">
+                                <div class="p-2.5 bg-white border border-slate-200 rounded">
+                                    <p class="font-bold text-gray-800 text-[11px]">SUBMITTED ATTACHMENT FILE</p>
+                                    <p class="text-[10px] text-slate-500">File: ${fileName}</p>
+                                </div>
+                                <p class="text-[11px] italic text-slate-500">Document successfully saved to system storage.</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center font-medium">${fileDesc}</p>
+                    </div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeFileModal() {
+            document.getElementById('fileModal').classList.add('hidden');
+        }
+
+        // Senior Mode Logic
+        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
+
+        function applySeniorMode() {
+            const btnText = document.getElementById('seniorBtnText');
+            const btn = document.getElementById('seniorModeBtn');
+
+            if (seniorModeActive) {
+                document.body.classList.add('senior-mode');
+                if (btnText) btnText.innerText = "Disable Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
+                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                }
+            } else {
+                document.body.classList.remove('senior-mode');
+                if (btnText) btnText.innerText = "Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
+                }
+            }
+        }
+
+        function toggleSeniorMode() {
+            seniorModeActive = !seniorModeActive;
+            localStorage.setItem('senior_mode_active', seniorModeActive);
+            applySeniorMode();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('residentUser');
+            window.location.href = 'index.html';
+        }
+
+        applySeniorMode();
+    </script>
+</body>
+</html>

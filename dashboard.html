@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Document System - Dashboard</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Senior Mode Accessible Styles -->
+    <style id="senior-mode-styles">
+        body.senior-mode {
+            font-size: 1.15rem !important;
+            background-color: #f8fafc !important;
+        }
+
+        body.senior-mode h1 { font-size: 2.25rem !important; font-weight: 800 !important; }
+        body.senior-mode h2 { font-size: 1.5rem !important; }
+
+        body.senior-mode button, 
+        body.senior-mode a {
+            font-size: 1.05rem !important;
+        }
+
+        body.senior-mode .dashboard-card {
+            border: 2px solid #1e3a8a !important;
+            background-color: #ffffff !important;
+        }
+
+        body.senior-mode label,
+        body.senior-mode p, 
+        body.senior-mode span {
+            font-size: 1.05rem !important;
+            color: #0f172a !important;
+        }
+    </style>
+</head>
+<body id="appBody" class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
+                <i class="fa-solid fa-building-columns text-base"></i>
+                <span>Barangay Document System</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="dashboard.html" class="flex items-center space-x-2 text-white font-semibold">
+                    <i class="fa-solid fa-border-all text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="new-request.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-square-plus text-xs"></i>
+                    <span>New Request</span>
+                </a>
+                <a href="status.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-clock text-xs"></i>
+                    <span>Status</span>
+                </a>
+                <a href="appointment.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-calendar text-xs"></i>
+                    <span>Appointment</span>
+                </a>
+                <a href="profile.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-user text-xs"></i>
+                    <span>Profile</span>
+                </a>
+
+                <!-- Senior Mode Toggle Button -->
+                <button id="seniorModeBtn" onclick="toggleSeniorMode()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-3 py-1 rounded-md text-xs flex items-center space-x-1 transition cursor-pointer">
+                    <i class="fa-regular fa-eye"></i>
+                    <span id="seniorBtnText">Senior Mode</span>
+                </button>
+
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 text-blue-100 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-8">
+        
+        <!-- Header & Profile Summary Card -->
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Welcome, Jerome!</h1>
+                <p class="text-gray-500 text-sm mt-1">Here's an overview of your document requests, announcements, and submitted files</p>
+            </div>
+
+            <a href="profile.html" class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-3 hover:border-blue-200 transition">
+                <img id="badgeProfilePic" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Profile Picture" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                <div>
+                    <h3 class="text-xs font-bold text-gray-900">Jerome Lonoy</h3>
+                    <p class="text-[10px] text-gray-400 font-medium">Resident ID: #RES-8821 <i class="fa-solid fa-chevron-right text-[8px] ml-0.5"></i></p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Total Requests Card -->
+            <div class="dashboard-card bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Requests</p>
+                    <h2 class="text-3xl font-bold text-slate-900 mt-1" id="totalRequestsCount">0</h2>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 text-[#1e3a8a] rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-regular fa-file-lines"></i>
+                </div>
+            </div>
+
+            <!-- Pending Requests Card -->
+            <div class="dashboard-card bg-white p-6 rounded-2xl border border-amber-100/60 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-amber-500">Pending</p>
+                    <h2 class="text-3xl font-bold text-amber-600 mt-1" id="pendingRequestsCount">0</h2>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center text-lg">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barangay Announcements Section -->
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                <i class="fa-solid fa-bullhorn text-[#1e3a8a]"></i>
+                <span>Barangay Announcements</span>
+            </h2>
+
+            <div id="announcementsContainer" class="space-y-3">
+                <!-- Dynamically populated from localStorage -->
+            </div>
+        </div>
+
+        <!-- Recent Requests Section -->
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-slate-800">Recent Requests</h2>
+
+            <div id="recentRequestsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamically Populated from localStorage -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUploadedProfilePic();
+            loadAnnouncements();
+            renderDashboardRequests();
+        });
+
+        // Dynamic Loading of Announcements posted from Admin Portal
+        function loadAnnouncements() {
+            const container = document.getElementById('announcementsContainer');
+            if (!container) return;
+
+            const storedAnnouncements = localStorage.getItem('barangayAnnouncements');
+            const announcements = storedAnnouncements ? JSON.parse(storedAnnouncements) : [];
+
+            if (!Array.isArray(announcements) || announcements.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl border border-dashed border-slate-200 text-center">
+                        <i class="fa-solid fa-bullhorn text-2xl text-slate-300 mb-2 block"></i>
+                        <p class="text-xs text-slate-500 font-medium">No announcements posted yet.</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Check back later for official announcements from the barangay office.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = announcements.map(item => `
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-sm font-bold text-slate-900">${item.title}</h3>
+                        <span class="text-[10px] text-slate-400 font-medium flex items-center space-x-1">
+                            <i class="fa-regular fa-calendar mr-1 text-[9px]"></i>
+                            <span>${item.date || '2026-09-23'}</span>
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line mt-1">${item.body || item.content || item.description || ''}</p>
+                    <p class="text-[10px] font-bold text-[#1e3a8a] tracking-wider pt-2">POSTED BY: BARANGAY OFFICE</p>
+                </div>
+            `).join('');
+        }
+
+        // Fixed Profile Pic Loader that survives logout/login
+        function loadUploadedProfilePic() {
+            const badgeImg = document.getElementById('badgeProfilePic');
+            if (!badgeImg) return;
+
+            // 1. Check direct storage keys where profile image base64 or URL could be saved
+            let savedPic = localStorage.getItem('profilePic') || 
+                           localStorage.getItem('userProfilePic') || 
+                           localStorage.getItem('residentProfilePic') || 
+                           localStorage.getItem('profileImage');
+
+            // 2. Check stored user objects
+            const residentUserData = localStorage.getItem('residentUser') || localStorage.getItem('user');
+            if (residentUserData) {
+                try {
+                    const parsedUser = JSON.parse(residentUserData);
+                    if (!savedPic && (parsedUser.profilePic || parsedUser.profileImage || parsedUser.avatar || parsedUser.photo)) {
+                        savedPic = parsedUser.profilePic || parsedUser.profileImage || parsedUser.avatar || parsedUser.photo;
+                    }
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            }
+
+            // 3. If image was found in any key, display it and keep user object updated
+            if (savedPic) {
+                badgeImg.src = savedPic;
+                localStorage.setItem('profilePic', savedPic);
+
+                if (residentUserData) {
+                    try {
+                        const parsedUser = JSON.parse(residentUserData);
+                        parsedUser.profilePic = savedPic;
+                        localStorage.setItem('residentUser', JSON.stringify(parsedUser));
+                    } catch (e) {
+                        console.error('Error updating residentUser:', e);
+                    }
+                }
+            }
+        }
+
+        // Dynamic Request Rendering
+        function renderDashboardRequests() {
+            const container = document.getElementById('recentRequestsContainer');
+            const totalCountEl = document.getElementById('totalRequestsCount');
+            const pendingCountEl = document.getElementById('pendingRequestsCount');
+
+            const storedData = localStorage.getItem('documentRequests');
+            const requests = storedData ? JSON.parse(storedData) : [];
+
+            totalCountEl.innerText = requests.length;
+            const pendingCount = requests.filter(r => (r.status || 'Pending') === 'Pending').length;
+            pendingCountEl.innerText = pendingCount;
+
+            if (!Array.isArray(requests) || requests.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 text-center py-10 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
+                        <p class="text-xs text-slate-500 font-medium">No active document requests.</p>
+                        <a href="new-request.html" class="inline-block mt-3 text-xs text-[#1e3a8a] font-bold hover:underline">Submit a New Request &rarr;</a>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requests.map((req, index) => {
+                const docName = req.documentType || req.documentName || req.document || 'Barangay Document';
+                const submissionDate = req.dateSubmitted || req.submittedDate || req.date || '2026-09-23';
+                const reqStatus = req.status || 'Pending';
+                const reqId = req.id || `REQ-00${index + 1}`;
+
+                let badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
+                if (reqStatus === 'Approved' || reqStatus === 'Ready') {
+                    badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+                } else if (reqStatus === 'Rejected') {
+                    badgeStyle = 'bg-red-100 text-red-800 border-red-200';
+                }
+
+                let fileName = 'No file attached';
+                let hasFile = false;
+                let filesList = req.submittedFiles || req.files || req.file || [];
+                if (typeof filesList === 'string' && filesList.length > 0) {
+                    fileName = filesList;
+                    hasFile = true;
+                } else if (Array.isArray(filesList) && filesList.length > 0) {
+                    fileName = typeof filesList[0] === 'string' ? filesList[0] : (filesList[0].name || 'Attachment.png');
+                    hasFile = true;
+                }
+
+                return `
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-400 tracking-wider">${reqId}</span>
+                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badgeStyle}">
+                                ${reqStatus}
+                            </span>
+                        </div>
+
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">${docName}</h3>
+                            <p class="text-[11px] text-slate-400 font-medium mt-0.5">Submitted on ${submissionDate}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-50 flex items-center justify-between text-xs">
+                            <div class="flex items-center space-x-1.5 text-slate-500 font-medium truncate max-w-[180px]">
+                                <i class="fa-regular ${hasFile ? 'fa-file-image text-slate-400' : 'fa-file-xmark text-slate-300'}"></i>
+                                <span class="truncate">${fileName}</span>
+                            </div>
+                            <a href="status.html" class="text-xs font-bold text-[#1e3a8a] hover:underline flex items-center space-x-1">
+                                <i class="fa-regular fa-eye text-[11px]"></i>
+                                <span>View File</span>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Senior Mode Logic
+        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
+
+        function applySeniorMode() {
+            const btnText = document.getElementById('seniorBtnText');
+            const btn = document.getElementById('seniorModeBtn');
+
+            if (seniorModeActive) {
+                document.body.classList.add('senior-mode');
+                if (btnText) btnText.innerText = "Disable Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
+                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                }
+            } else {
+                document.body.classList.remove('senior-mode');
+                if (btnText) btnText.innerText = "Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
+                }
+            }
+        }
+
+        function toggleSeniorMode() {
+            seniorModeActive = !seniorModeActive;
+            localStorage.setItem('senior_mode_active', seniorModeActive);
+            applySeniorMode();
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('residentUser');
+            window.location.href = 'index.html';
+        }
+
+        applySeniorMode();
+    </script>
+</body>
+</html>

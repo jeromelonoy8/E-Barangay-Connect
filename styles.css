@@ -1,0 +1,743 @@
+/* ==========================================================================
+   Imports & Base Styles
+   ========================================================================== */
+@import url('https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css');
+
+body {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ==========================================================================
+   Admin Portal Page & Login Centering (Matches Reference UI)
+   ========================================================================== */
+.admin-body {
+    background-color: #f1f5f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+.admin-header-icon {
+    width: 3rem;
+    height: 3rem;
+    background-color: #1e3a8a;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    margin: 0 auto 1rem auto;
+    box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.25);
+}
+
+.admin-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 26rem; /* Keeps card compact and centered */
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    border: 1px solid #e2e8f0;
+}
+
+.admin-input-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.125rem;
+    height: 1.125rem;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.admin-input {
+    width: 100%;
+    padding: 0.65rem 1rem 0.65rem 2.6rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    color: #1e293b;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-input:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+}
+
+.admin-btn {
+    width: 100%;
+    background-color: #1e3a8a;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-align: center;
+    display: block;
+    cursor: pointer;
+}
+
+.admin-btn:hover {
+    background-color: #1e1b4b;
+}
+
+.admin-btn:active {
+    transform: scale(0.99);
+}
+
+/* ==========================================================================
+   New Request & Status Form Utility Classes
+   ========================================================================== */
+.upload-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.upload-dropzone:hover {
+    border-color: #1e40af;
+    background-color: #f1f5f9;
+}
+
+.form-field-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    color: #1e293b;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-field-input:focus {
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.15);
+}
+
+.status-card {
+    background-color: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.status-note-box {
+    background-color: #fafafa;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* ==========================================================================
+   Senior Mode (Clean High-Contrast Accessibility Mode)
+   ========================================================================== */
+body.senior-mode {
+    background-color: #fefce8 !important; /* Soft cream background */
+    font-size: 1.125rem !important;
+}
+
+/* Headings & General Text */
+body.senior-mode h1, 
+body.senior-mode h2, 
+body.senior-mode h3,
+body.senior-mode p,
+body.senior-mode span,
+body.senior-mode label,
+body.senior-mode main div {
+    color: #0f172a !important; /* Dark navy/black high contrast */
+    font-weight: 700 !important;
+}
+
+/* Subtext & Secondary Labels */
+body.senior-mode main .text-gray-500,
+body.senior-mode main .text-gray-400,
+body.senior-mode main .text-gray-600 {
+    color: #334155 !important;
+}
+
+/* Inputs, Selects, & Textareas in Senior Mode */
+body.senior-mode input, 
+body.senior-mode select,
+body.senior-mode textarea,
+body.senior-mode .form-field-input,
+body.senior-mode .admin-input {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 2px solid #0f172a !important;
+    font-weight: 600 !important;
+}
+
+/* Dropzone Senior Mode Override */
+body.senior-mode .upload-dropzone {
+    border: 2px dashed #0f172a !important;
+    background-color: #ffffff !important;
+}
+
+body.senior-mode .upload-dropzone p,
+body.senior-mode .upload-dropzone span,
+body.senior-mode .upload-dropzone i {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+}
+
+/* Form Action Buttons in Senior Mode */
+body.senior-mode main button[type="submit"],
+body.senior-mode .admin-btn {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border: 2px solid #000000 !important;
+    font-weight: 800 !important;
+}
+
+body.senior-mode main button[type="button"] {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+    border: 2px solid #0f172a !important;
+    font-weight: 800 !important;
+}
+
+/* Structural Cards & Containers */
+body.senior-mode .bg-white,
+body.senior-mode .status-card,
+body.senior-mode .admin-card {
+    background-color: #ffffff !important;
+    border: 2px solid #0f172a !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.senior-mode .status-note-box {
+    background-color: #f8fafc !important;
+    border-top: 2px solid #0f172a !important;
+}
+
+/* Header & Navigation Fixes */
+body.senior-mode nav {
+    background-color: #0f172a !important;
+    border-bottom: 4px solid #facc15 !important;
+}
+
+body.senior-mode nav a,
+body.senior-mode nav button,
+body.senior-mode nav span,
+body.senior-mode nav i,
+body.senior-mode nav .text-blue-200,
+body.senior-mode nav .text-white {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+}
+
+body.senior-mode nav button.senior-toggle-btn {
+    background-color: #facc15 !important;
+    color: #0f172a !important;
+    border: 2px solid #ffffff !important;
+}
+
+body.senior-mode nav button.senior-toggle-btn i,
+body.senior-mode nav button.senior-toggle-btn span {
+    color: #0f172a !important;
+}
+
+/* ==========================================================================
+   Appointment Slot Status Styles
+   ========================================================================== */
+.slot-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.slot-available {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.slot-busy {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.slot-full {
+    background-color: #ffe4e6;
+    color: #9f1239;
+}
+
+/* Senior Mode Overrides for Appointment Slots */
+body.senior-mode .slot-badge {
+    border: 1px solid #0f172a !important;
+    font-weight: 800 !important;
+}
+
+/* ==========================================================================
+   Admin Dashboard Layout & Custom Component Styles
+   ========================================================================== */
+
+/* Navbar Styling */
+.admin-nav {
+    background-color: #1e3a8a;
+    color: #ffffff;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.admin-nav-link {
+    color: #dbeafe;
+    transition: color 0.15s ease;
+}
+
+.admin-nav-link:hover,
+.admin-nav-link.active {
+    color: #ffffff;
+}
+
+/* Metric Cards */
+.dash-card {
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.dash-card-total {
+    background-color: rgba(239, 246, 255, 0.6);
+    border: 1px solid rgba(191, 219, 254, 0.6);
+}
+
+.dash-card-pending {
+    background-color: rgba(254, 252, 232, 0.6);
+    border: 1px solid rgba(254, 240, 138, 0.6);
+}
+
+.dash-card-approved {
+    background-color: rgba(236, 253, 245, 0.6);
+    border: 1px solid rgba(167, 243, 208, 0.6);
+}
+
+.dash-card-rejected {
+    background-color: rgba(255, 241, 242, 0.6);
+    border: 1px solid rgba(254, 205, 211, 0.6);
+}
+
+.dash-card-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Request Row Cards */
+.request-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background-color: rgba(248, 250, 252, 0.7);
+    border: 1px solid #f1f5f9;
+    border-radius: 0.75rem;
+    transition: background-color 0.15s ease;
+}
+
+.request-item:hover {
+    background-color: rgba(241, 245, 249, 0.5);
+}
+
+/* Status Badges */
+.badge-status {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.badge-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid rgba(253, 230, 138, 0.5);
+}
+
+.badge-approved {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid rgba(167, 243, 208, 0.5);
+}
+
+.badge-ready {
+    background-color: #ccfbf1;
+    color: #115e59;
+    border: 1px solid rgba(153, 246, 228, 0.5);
+}
+
+.badge-rejected {
+    background-color: #ffe4e6;
+    color: #9f1239;
+    border: 1px solid rgba(254, 205, 211, 0.5);
+}
+/* ==========================================================================
+   Manage Requests Table & Document Preview Modal Styles
+   ========================================================================== */
+
+/* Table Layout */
+.request-table-container {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+}
+
+.request-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+}
+
+.request-table th {
+    padding: 1rem 1.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    border-bottom: 1px solid #f1f5f9;
+    background-color: #ffffff;
+}
+
+.request-table td {
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+    color: #1e293b;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.request-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Action Buttons */
+.btn-action-view {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-action-view:hover {
+    background-color: #dbeafe;
+}
+
+.btn-action-approve {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    background-color: #16a34a;
+    color: #ffffff;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-approve:hover {
+    background-color: #15803d;
+}
+
+.btn-action-reject {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    background-color: #dc2626;
+    color: #ffffff;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-reject:hover {
+    background-color: #b91c1c;
+}
+
+/* Modal Overlay & Card */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+}
+
+.modal-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    max-width: 36rem;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+/* ==========================================================================
+   Announcements Styles
+   ========================================================================== */
+
+/* Announcement Card Form */
+.announcement-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.announcement-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.announcement-input:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.btn-post-announcement {
+    background-color: #1e3a8a;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-post-announcement:hover {
+    background-color: #1e40af;
+}
+
+/* Posted Announcement Items */
+.announcement-item {
+    background-color: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    transition: box-shadow 0.15s ease;
+}
+
+.announcement-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.btn-announcement-edit {
+    color: #2563eb;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+}
+
+.btn-announcement-edit:hover {
+    color: #1d4ed8;
+}
+
+.btn-announcement-delete {
+    color: #dc2626;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+}
+
+.btn-announcement-delete:hover {
+    color: #b91c1c;
+}
+/* ==========================================================================
+   Official / Staff Management Styles
+   ========================================================================== */
+
+/* Input Fields for Forms */
+.form-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    color: #0f172a;
+    outline: none;
+    background-color: #ffffff;
+    transition: all 0.15s ease-in-out;
+}
+
+.form-input:focus {
+    border-color: #1e3a8a;
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+/* Primary Button */
+.btn-primary {
+    background-color: #1e3a8a;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:hover {
+    background-color: #1e40af;
+}
+
+/* Table Actions */
+.btn-secondary-sm {
+    padding: 0.375rem 0.75rem;
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-secondary-sm:hover {
+    background-color: #e2e8f0;
+}
+/* ==========================================================================
+   Resident Profile & Document File Details Styles
+   ========================================================================== */
+
+/* Profile Header Card */
+.profile-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.profile-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    background-color: #eff6ff;
+    color: #1e3a8a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    border: 2px solid #bfdbfe;
+}
+
+/* Request Cards with File Badges */
+.resident-request-card {
+    background-color: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 0.875rem;
+    padding: 1.25rem;
+    transition: all 0.15s ease;
+}
+
+.resident-request-card:hover {
+    background-color: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border-color: #e2e8f0;
+}
+
+.btn-file-preview {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    background-color: #ffffff;
+    color: #3b82f6;
+    border: 1px solid #dbeafe;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-file-preview:hover {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+}
+/* Announcement Cards */
+.announcement-card {
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+    border-left: 4px solid #1e3a8a;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+/* ==========================================
+   Add Official Page Styles
+   ========================================== */
+
+.custom-input {
+    transition: all 0.2s ease-in-out;
+}
+
+.custom-input:focus {
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+}
+
+select.custom-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}

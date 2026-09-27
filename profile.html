@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barangay Document System - User Profile</title>
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Senior Mode Accessible Styles matching Dashboard -->
+    <style id="senior-mode-styles">
+        body.senior-mode {
+            font-size: 1.15rem !important;
+            background-color: #f8fafc !important;
+        }
+
+        /* Enlarge Headings */
+        body.senior-mode h1 { font-size: 2.25rem !important; font-weight: 800 !important; }
+        body.senior-mode h2 { font-size: 1.5rem !important; }
+        body.senior-mode label { font-size: 1.1rem !important; font-weight: 700 !important; }
+
+        /* Increase contrast and size on interactive elements */
+        body.senior-mode button, 
+        body.senior-mode a,
+        body.senior-mode input {
+            font-size: 1.05rem !important;
+        }
+
+        /* Senior Mode High-Contrast Cards & Form Inputs */
+        body.senior-mode .profile-card {
+            border: 2px solid #1e3a8a !important;
+            background-color: #ffffff !important;
+        }
+
+        body.senior-mode input {
+            border: 2px solid #1e3a8a !important;
+            padding: 0.75rem !important;
+        }
+
+        body.senior-mode p, 
+        body.senior-mode span {
+            font-size: 1.05rem !important;
+            color: #0f172a !important;
+        }
+    </style>
+</head>
+<body id="appBody" class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
+                <i class="fa-solid fa-building-columns text-base"></i>
+                <span>Barangay Document System</span>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="dashboard.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-solid fa-border-all text-xs"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="new-request.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-square-plus text-xs"></i>
+                    <span>New Request</span>
+                </a>
+                <a href="status.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-clock text-xs"></i>
+                    <span>Status</span>
+                </a>
+                <a href="appointment.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
+                    <i class="fa-regular fa-calendar text-xs"></i>
+                    <span>Appointment</span>
+                </a>
+                <a href="profile.html" class="flex items-center space-x-2 text-white font-semibold">
+                    <i class="fa-regular fa-user text-xs"></i>
+                    <span>Profile</span>
+                </a>
+
+                <!-- Matching Senior Mode Toggle Button -->
+                <button id="seniorModeBtn" onclick="toggleSeniorMode()" class="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-3 py-1 rounded-md text-xs flex items-center space-x-1 transition cursor-pointer">
+                    <i class="fa-regular fa-eye"></i>
+                    <span id="seniorBtnText">Senior Mode</span>
+                </button>
+
+                <button onclick="handleLogout()" class="flex items-center space-x-1.5 text-blue-100 hover:text-white transition cursor-pointer">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-3xl mx-auto px-6 py-8 flex-1 w-full">
+        
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Resident Profile</h1>
+            <p class="text-gray-500 text-sm mt-1">Manage your personal information and profile picture</p>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="profile-card bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-6 transition-all">
+            
+            <!-- User Header Summary with Profile Photo Upload -->
+            <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6 pb-6 mb-6 border-b border-gray-100">
+                
+                <!-- Profile Image / Avatar Container -->
+                <div class="relative group">
+                    <div id="avatarContainer" class="w-24 h-24 bg-blue-100 text-[#1e3a8a] font-bold text-3xl rounded-full flex items-center justify-center border-4 border-blue-900 overflow-hidden shadow-sm">
+                        <i id="defaultAvatarIcon" class="fa-regular fa-user"></i>
+                        <img id="profileImagePreview" src="" alt="Profile Picture" class="w-full h-full object-cover hidden">
+                    </div>
+                    
+                    <!-- Quick Camera Overlay Button -->
+                    <button type="button" onclick="document.getElementById('profilePicInput').click()" class="absolute bottom-0 right-0 bg-[#1e3a8a] hover:bg-blue-800 text-white p-2 rounded-full border-2 border-white shadow transition cursor-pointer" title="Upload Photo">
+                        <i class="fa-solid fa-camera text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Hidden Image Input File -->
+                <input type="file" id="profilePicInput" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
+
+                <div class="text-center sm:text-left flex-1">
+                    <h2 id="displayName" class="text-xl font-bold text-gray-900">Jerome Yu Lonoy</h2>
+                    <span class="inline-block px-3 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mt-1">Resident ID: #RES-8821</span>
+                    
+                    <div class="mt-3 flex items-center justify-center sm:justify-start space-x-3">
+                        <button type="button" onclick="document.getElementById('profilePicInput').click()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                            <i class="fa-solid fa-upload mr-1"></i> Change Photo
+                        </button>
+                        <button type="button" id="removePhotoBtn" onclick="removeProfilePhoto()" class="text-xs font-semibold text-red-600 hover:text-red-800 transition hidden cursor-pointer">
+                            Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Details Form -->
+            <form id="profileForm" onsubmit="handleProfileSave(event)" class="space-y-5">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Full Name -->
+                    <div>
+                        <label for="fullName" class="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+                        <input type="text" id="fullName" value="Jerome Yu Lonoy" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+
+                    <!-- Email Address -->
+                    <div>
+                        <label for="email" class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+                        <input type="email" id="email" value="jerome.lonoy@example.com" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Contact Number -->
+                    <div>
+                        <label for="contactNo" class="block text-sm font-semibold text-gray-700 mb-1.5">Contact Number</label>
+                        <input type="text" id="contactNo" value="09123456789" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+
+                    <!-- Date of Birth -->
+                    <div>
+                        <label for="dob" class="block text-sm font-semibold text-gray-700 mb-1.5">Date of Birth</label>
+                        <input type="date" id="dob" value="1995-05-15" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+                </div>
+
+                <!-- Complete Address -->
+                <div>
+                    <label for="address" class="block text-sm font-semibold text-gray-700 mb-1.5">Barangay Address</label>
+                    <input type="text" id="address" value="Zone 3, Barangay Proper, City" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="window.location.href='dashboard.html'" class="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-all cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-lg bg-[#1e3a8a] text-white font-semibold text-sm hover:bg-blue-800 transition-all shadow cursor-pointer">
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        let currentProfilePhotoBase64 = null;
+
+        // Display user photo if existing
+        function renderProfilePhoto(base64Image) {
+            const preview = document.getElementById('profileImagePreview');
+            const defaultIcon = document.getElementById('defaultAvatarIcon');
+            const removeBtn = document.getElementById('removePhotoBtn');
+
+            if (base64Image) {
+                preview.src = base64Image;
+                preview.classList.remove('hidden');
+                defaultIcon.classList.add('hidden');
+                removeBtn.classList.remove('hidden');
+            } else {
+                preview.src = "";
+                preview.classList.add('hidden');
+                defaultIcon.classList.remove('hidden');
+                removeBtn.classList.add('hidden');
+            }
+        }
+
+        // Handle image selection & conversion to Base64 string
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentProfilePhotoBase64 = e.target.result;
+                    renderProfilePhoto(currentProfilePhotoBase64);
+                    
+                    // Immediately sync image to backup storage keys
+                    localStorage.setItem('profilePic', currentProfilePhotoBase64);
+                    localStorage.setItem('userProfilePic', currentProfilePhotoBase64);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Remove uploaded photo
+        function removeProfilePhoto() {
+            currentProfilePhotoBase64 = null;
+            document.getElementById('profilePicInput').value = "";
+            renderProfilePhoto(null);
+            
+            // Clear backup picture storage
+            localStorage.removeItem('profilePic');
+            localStorage.removeItem('userProfilePic');
+            localStorage.removeItem('residentProfilePic');
+            localStorage.removeItem('profileImage');
+        }
+
+        // Load resident user info from localStorage on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Check standalone keys first for photo persistence
+            let savedPhoto = localStorage.getItem('profilePic') || 
+                             localStorage.getItem('userProfilePic') || 
+                             localStorage.getItem('residentProfilePic') || 
+                             localStorage.getItem('profileImage');
+
+            const storedUser = localStorage.getItem('residentUser') || localStorage.getItem('user');
+            if (storedUser) {
+                try {
+                    const user = JSON.parse(storedUser);
+                    if (user.name) {
+                        document.getElementById('fullName').value = user.name;
+                        document.getElementById('displayName').innerText = user.name;
+                    }
+                    if (user.email) document.getElementById('email').value = user.email;
+                    if (user.contact) document.getElementById('contactNo').value = user.contact;
+                    if (user.address) document.getElementById('address').value = user.address;
+                    
+                    if (!savedPhoto && (user.photo || user.profilePic || user.profileImage || user.avatar)) {
+                        savedPhoto = user.photo || user.profilePic || user.profileImage || user.avatar;
+                    }
+                } catch (e) {
+                    console.error("Could not parse user data from localStorage", e);
+                }
+            }
+
+            if (savedPhoto) {
+                currentProfilePhotoBase64 = savedPhoto;
+                renderProfilePhoto(savedPhoto);
+                localStorage.setItem('profilePic', savedPhoto);
+            }
+        });
+
+        // Senior Mode Logic
+        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
+
+        function applySeniorMode() {
+            const btnText = document.getElementById('seniorBtnText');
+            const btn = document.getElementById('seniorModeBtn');
+
+            if (seniorModeActive) {
+                document.body.classList.add('senior-mode');
+                if (btnText) btnText.innerText = "Disable Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
+                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                }
+            } else {
+                document.body.classList.remove('senior-mode');
+                if (btnText) btnText.innerText = "Senior Mode";
+                if (btn) {
+                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
+                }
+            }
+        }
+
+        function toggleSeniorMode() {
+            seniorModeActive = !seniorModeActive;
+            localStorage.setItem('senior_mode_active', seniorModeActive);
+            applySeniorMode();
+        }
+
+        function handleProfileSave(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('fullName').value;
+            const email = document.getElementById('email').value;
+            const contact = document.getElementById('contactNo').value;
+            const address = document.getElementById('address').value;
+
+            // Save updated information + photo to localStorage under multiple key formats
+            const updatedUser = { 
+                name: fullName, 
+                email: email, 
+                contact: contact, 
+                address: address,
+                photo: currentProfilePhotoBase64,
+                profilePic: currentProfilePhotoBase64
+            };
+            
+            localStorage.setItem('residentUser', JSON.stringify(updatedUser));
+            
+            if (currentProfilePhotoBase64) {
+                localStorage.setItem('profilePic', currentProfilePhotoBase64);
+                localStorage.setItem('userProfilePic', currentProfilePhotoBase64);
+            }
+
+            document.getElementById('displayName').innerText = fullName;
+            alert('Profile updated successfully!');
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('residentUser');
+            window.location.href = 'index.html';
+        }
+
+        // Initialize Senior Mode state
+        applySeniorMode();
+    </script>
+</body>
+</html>
