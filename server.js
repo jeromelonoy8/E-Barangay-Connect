@@ -16,12 +16,12 @@ const SENDER_NAME = process.env.SEMAPHORE_SENDER_NAME || 'SEMAPHORE';
 
 // Production Database Pool Configuration (Aiven SSL + Fallback to Local)
 const db = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '123456',
+    host: process.env.DB_HOST || 'mysql-a94c8d1-liceo-e06a.i.aivencloud.com',
+    user: process.env.DB_USER || 'avnadmin',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'e_barangay_db',
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306,
-    ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 21320,
+    ssl: process.env.DB_HOST || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // Test Connection Pool
@@ -68,7 +68,7 @@ async function sendSMSNotification(userId, message) {
         }
 
         try {
-            const response = await axios.post(
+            await axios.post(
                 'https://semaphore.co/api/v4/messages',
                 new URLSearchParams({
                     apikey: SEMAPHORE_API_KEY,
@@ -126,7 +126,6 @@ app.post('/api/auth/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        // FIXED: Using single quotes 'resident' instead of double quotes "resident"
         const sql = "INSERT INTO users (full_name, username, email, phone_number, password_hash, role) VALUES (?, ?, ?, ?, ?, 'resident')";
         
         db.query(sql, [username, username, email, phone_number, hashedPassword], (err, result) => {
@@ -160,7 +159,17 @@ app.post('/api/auth/login', (req, res) => {
             return res.status(403).json({ error: 'Access denied. Please use the Admin Portal.' });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        // Support both hashed passwords and direct plain text fallback
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, user.password_hash);
+        } catch (e) {
+            isMatch = false;
+        }
+        if (!isMatch && password === user.password_hash) {
+            isMatch = true;
+        }
+
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid resident credentials.' });
         }
@@ -192,13 +201,23 @@ app.post('/api/auth/admin-login', (req, res) => {
 
         const admin = results[0];
 
-        const isMatch = await bcrypt.compare(password, admin.password_hash);
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid admin credentials.' });
-        }
-
         if (admin.role !== 'admin') {
             return res.status(403).json({ error: 'Access denied: Account is not authorized as an Admin.' });
+        }
+
+        // Support both hashed passwords and direct plain text fallback
+        let isMatch = false;
+        try {
+            isMatch = await bcrypt.compare(password, admin.password_hash);
+        } catch (e) {
+            isMatch = false;
+        }
+        if (!isMatch && password === admin.password_hash) {
+            isMatch = true;
+        }
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid admin credentials.' });
         }
 
         res.json({
@@ -263,7 +282,7 @@ app.patch('/api/requests/:id/status', (req, res) => {
     });
 });
 
-// Dynamic Port Binding for Render Cloud Deployment
+// Dynamic Port Binding for Deployment
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`E-Barangay Connect server running on port ${PORT}`);
