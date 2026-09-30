@@ -6,13 +6,14 @@
     <title>Manage Requests - Barangay Admin Portal</title>
     <!-- Tailwind CSS Script -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- External CSS stylesheet -->
+    <link rel="stylesheet" href="style.css">
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="font-sans antialiased text-gray-800 bg-slate-50 min-h-screen flex flex-col">
+<body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen flex flex-col">
 
     <!-- Top Navigation Bar -->
     <nav class="bg-[#1e3a8a] text-white shadow-sm">
@@ -101,12 +102,30 @@
                         </tr>
                     </thead>
                     <tbody id="requestsTableBody" class="divide-y divide-slate-100 text-xs">
-                        <!-- Requests will dynamically render here -->
+                        <!-- Requests dynamically render here -->
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
+
+    <!-- Request Details Modal -->
+    <div id="requestDetailsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
+            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
+                <h3 class="font-bold text-sm">Request Details</h3>
+                <button onclick="closeDetailsModal()" class="text-blue-200 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-xs" id="detailsModalBody">
+                <!-- Details dynamically loaded -->
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2" id="detailsModalActions">
+                <!-- Dynamic Action Buttons -->
+            </div>
+        </div>
+    </div>
 
     <!-- Admin Profile Modal -->
     <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
@@ -114,7 +133,7 @@
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
-                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm">A</div>
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden avatar-border shadow-sm">A</div>
                         <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
                             <i class="fa-solid fa-camera"></i>
                         </div>
@@ -279,7 +298,7 @@
                 if (status === 'Rejected') badgeStyle = 'bg-red-100 text-red-800 border-red-200';
 
                 return `
-                    <tr class="hover:bg-slate-50 transition">
+                    <tr class="hover:bg-slate-50 table-row-transition">
                         <td class="p-4 font-bold text-slate-700">${reqId}</td>
                         <td class="p-4 font-semibold text-slate-900">${name}</td>
                         <td class="p-4 text-slate-600">${type}</td>
@@ -288,6 +307,9 @@
                             <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">${status}</span>
                         </td>
                         <td class="p-4 text-center space-x-1">
+                            <button onclick="viewRequestDetails('${reqId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
+                                View
+                            </button>
                             <button onclick="updateStatus('${reqId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px] transition">
                                 Approve
                             </button>
@@ -298,6 +320,55 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        function viewRequestDetails(reqId) {
+            const req = allRequests.find((r, idx) => (r.id || `REQ-00${idx + 1}`) === reqId);
+            if (!req) return;
+
+            const modalBody = document.getElementById('detailsModalBody');
+            const modalActions = document.getElementById('detailsModalActions');
+
+            modalBody.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Request ID</span>
+                        <span class="font-bold text-slate-800">${req.id || reqId}</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Status</span>
+                        <span class="font-bold text-slate-800">${req.status || 'Pending'}</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Resident Name</span>
+                        <span class="text-slate-800 font-medium">${req.residentName || req.fullName || 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Document Requested</span>
+                        <span class="text-slate-800 font-medium">${req.documentType || req.documentName || 'N/A'}</span>
+                    </div>
+                    <div class="col-span-2">
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Purpose</span>
+                        <span class="text-slate-800 font-medium">${req.purpose || 'Not specified'}</span>
+                    </div>
+                    <div class="col-span-2">
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Date Submitted</span>
+                        <span class="text-slate-800 font-medium">${req.dateSubmitted || 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+
+            modalActions.innerHTML = `
+                <button onclick="closeDetailsModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">Close</button>
+                <button onclick="updateStatus('${reqId}', 'Approved'); closeDetailsModal();" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve Request</button>
+                <button onclick="updateStatus('${reqId}', 'Rejected'); closeDetailsModal();" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Reject Request</button>
+            `;
+
+            document.getElementById('requestDetailsModal').classList.remove('hidden');
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('requestDetailsModal').classList.add('hidden');
         }
 
         function updateStatus(reqId, newStatus) {
@@ -318,15 +389,19 @@
             const filter = document.getElementById('statusFilter').value;
 
             const filtered = allRequests.filter(req => {
-                const matchesSearch = (req.residentName || '').toLowerCase().includes(search) || (req.id || '').toLowerCase().includes(search);
-                const matchesStatus = filter === 'All' || (req.status || 'Pending') === filter;
+                const nameMatch = (req.residentName || req.fullName || '').toLowerCase().includes(search);
+                const idMatch = (req.id || '').toLowerCase().includes(search);
+                const matchesSearch = nameMatch || idMatch;
+
+                const reqStatus = req.status || 'Pending';
+                const matchesStatus = filter === 'All' || reqStatus === filter;
+
                 return matchesSearch && matchesStatus;
             });
 
             renderRequests(filtered);
         }
 
-        /* --- Profile Modal, Avatar Upload & Password Functions --- */
         function openProfileModal() {
             const currentAdmin = getActiveAdmin();
             document.getElementById('modalProfileName').innerText = currentAdmin.name || 'Admin User';
