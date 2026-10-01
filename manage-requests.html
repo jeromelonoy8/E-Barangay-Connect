@@ -15,8 +15,8 @@
 </head>
 <body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen flex flex-col">
 
-    <!-- Top Navigation Bar -->
-    <nav class="nav-header text-white shadow-sm">
+    <!-- Top Navigation Bar (Restored Solid Navy Blue Background) -->
+    <nav class="bg-[#1e3a8a] text-white shadow-md">
         <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
                 <span>Barangay Admin Portal</span>
@@ -28,7 +28,7 @@
                     <i class="fa-solid fa-border-all text-xs"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="manage-requests.html" class="flex items-center space-x-2 text-white font-semibold">
+                <a href="manage-requests.html" class="flex items-center space-x-2 text-white font-bold">
                     <i class="fa-regular fa-file-lines text-xs"></i>
                     <span>Manage Requests</span>
                 </a>
@@ -42,8 +42,8 @@
                 </a>
 
                 <!-- Profile Link & Button -->
-                <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer nav-profile-divider">
-                    <div id="navAvatarContainer" class="w-6 h-6 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center avatar-initial overflow-hidden shrink-0">
+                <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800 pl-4">
+                    <div id="navAvatarContainer" class="w-6 h-6 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
                         <span id="navAvatarInitial">A</span>
                     </div>
                     <span id="navProfileName">Profile</span>
@@ -92,7 +92,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-table-header uppercase font-bold text-slate-500 tracking-wider">
+                        <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
                             <th class="p-4">Request ID</th>
                             <th class="p-4">Resident Name</th>
                             <th class="p-4">Document Type</th>
@@ -110,7 +110,7 @@
     </main>
 
     <!-- Request Details Modal -->
-    <div id="requestDetailsModal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden p-4">
+    <div id="requestDetailsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
             <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
                 <h3 class="font-bold text-sm">Request Details</h3>
@@ -128,19 +128,19 @@
     </div>
 
     <!-- Admin Profile Modal -->
-    <div id="profileModal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden modal-max-height flex flex-col">
+    <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
-                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden avatar-border shadow-sm">A</div>
-                        <div class="absolute inset-0 camera-overlay rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white camera-icon-text">
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/20 shadow-sm">A</div>
+                        <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
-                        <p id="modalProfileRole" class="text-profile-subtext text-blue-200">System Admin</p>
+                        <p id="modalProfileRole" class="text-xs text-blue-200">System Admin</p>
                     </div>
                 </div>
                 <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
@@ -155,19 +155,19 @@
                     <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Details</h4>
                     
                     <div>
-                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Username</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Username</label>
                         <input type="text" id="profileUsername" disabled 
                             class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed">
                     </div>
 
                     <div>
-                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Email Address *</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Email Address *</label>
                         <input type="email" id="profileEmail" required placeholder="official@barangay.gov.ph" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
 
                     <div>
-                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
                         <input type="tel" id="profilePhone" required placeholder="09123456789" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
@@ -184,17 +184,17 @@
                 <form id="changePasswordForm" onsubmit="handleChangePassword(event)" class="space-y-3">
                     <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Security & Password</h4>
                     <div>
-                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Current Password</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Current Password</label>
                         <input type="password" id="currentPassword" required placeholder="Enter current password" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
                     <div>
-                        <label class="block text-form-label font-semibold text-slate-600 mb-1">New Password</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Password</label>
                         <input type="password" id="newPassword" required placeholder="Enter new password" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
                     <div>
-                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Confirm New Password</label>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Confirm New Password</label>
                         <input type="password" id="confirmPassword" required placeholder="Confirm new password" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
@@ -300,9 +300,10 @@
             }
 
             tbody.innerHTML = requestsList.map((req, idx) => {
-                const rawId = req.id || req.request_id;
-                const reqId = rawId ? `REQ-00${rawId}` : `REQ-00${idx + 1}`;
-                const rawDbId = rawId || (idx + 1);
+                const rawId = req.id || req.request_id || (idx + 1);
+                // Fixed ID formatting logic to prevent duplicate "REQ-00" prefixes
+                const reqId = String(rawId).startsWith('REQ-') ? rawId : `REQ-00${rawId}`;
+                const rawDbId = rawId;
                 const name = req.resident_name || req.residentName || req.fullName || 'Resident User';
                 const type = req.document_type || req.documentType || req.documentName || 'Barangay Document';
                 const dateRaw = req.date_submitted || req.dateSubmitted || '2026-09-23';
@@ -310,46 +311,42 @@
                 const status = req.status || 'Pending';
                 const fileUrl = req.file_url || req.fileUrl || '';
 
-                let badgeStyle = 'bg-amber-100 text-amber-700';
+                let badgeStyle = 'bg-amber-100 text-amber-700 border-amber-200';
                 if (status === 'Approved' || status === 'Ready' || status === 'APPROVED_BOOK_APPOINTMENT' || status === 'READY_FOR_PICKUP') {
-                    badgeStyle = 'bg-emerald-100 text-emerald-700';
+                    badgeStyle = 'bg-emerald-100 text-emerald-700 border-emerald-200';
                 } else if (status === 'Rejected') {
-                    badgeStyle = 'bg-rose-100 text-rose-700';
+                    badgeStyle = 'bg-rose-100 text-rose-700 border-rose-200';
                 }
 
                 const viewFileBtn = fileUrl 
-                    ? `<a href="${fileUrl}" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 text-badge transition inline-block">View File</a>`
-                    : `<span class="text-slate-400 text-badge italic mr-1">No File</span>`;
+                    ? `<a href="${fileUrl}" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 text-[11px] transition inline-block">View File</a>`
+                    : `<span class="text-slate-400 text-[11px] italic mr-1">No File</span>`;
 
                 return `
-    <tr class="hover:bg-slate-50 table-row-transition">
-        <td class="p-4 font-bold text-slate-700">${reqId}</td>
-        <td class="p-4 font-semibold text-slate-900">${name}</td>
-        <td class="p-4 text-slate-600">${type}</td>
-        <td class="p-4 text-slate-500">${date}</td>
-        <td class="p-4">
-            <span class="text-badge font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">${status}</span>
-        </td>
-        <td class="p-4 text-center space-x-1">
-            ${viewFileBtn}
-            
-            <!-- View button always stays visible for all statuses -->
-            <button onclick="viewRequestDetails('${rawDbId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-badge transition">
-                View
-            </button>
-
-            <!-- Approve/Reject buttons only show if status is Pending -->
-            ${status.toLowerCase() === 'pending' ? `
-                <button onclick="updateStatus('${rawDbId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-badge transition">
-                    Approve
-                </button>
-                <button onclick="updateStatus('${rawDbId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-badge transition">
-                    Reject
-                </button>
-            ` : ''}
-        </td>
-    </tr>
-`;
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-4 font-bold text-slate-700">${reqId}</td>
+                        <td class="p-4 font-semibold text-slate-900">${name}</td>
+                        <td class="p-4 text-slate-600">${type}</td>
+                        <td class="p-4 text-slate-500">${date}</td>
+                        <td class="p-4">
+                            <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">${status}</span>
+                        </td>
+                        <td class="p-4 text-center space-x-1">
+                            ${viewFileBtn}
+                            <button onclick="viewRequestDetails('${rawDbId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
+                                View
+                            </button>
+                            ${status.toLowerCase() === 'pending' ? `
+                                <button onclick="updateStatus('${rawDbId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px] transition">
+                                    Approve
+                                </button>
+                                <button onclick="updateStatus('${rawDbId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-[11px] transition">
+                                    Reject
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
             }).join('');
         }
 
@@ -367,39 +364,43 @@
 
             const rejectionReasonDisplay = req.rejection_reason 
                 ? `<div class="col-span-2 bg-red-50 p-2.5 rounded-xl border border-red-200">
-                    <span class="block text-red-600 font-semibold uppercase text-badge">Rejection Reason Note</span>
+                    <span class="block text-red-600 font-semibold uppercase text-[10px]">Rejection Reason Note</span>
                     <span class="text-red-800 font-medium">${req.rejection_reason}</span>
                    </div>`
                 : '';
 
+            const formattedModalReqId = String(req.id || req.request_id || dbId).startsWith('REQ-') 
+                ? (req.id || req.request_id || dbId) 
+                : `REQ-00${req.id || req.request_id || dbId}`;
+
             modalBody.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Request ID</span>
-                        <span class="font-bold text-slate-800">REQ-00${req.id || req.request_id || dbId}</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Request ID</span>
+                        <span class="font-bold text-slate-800">${formattedModalReqId}</span>
                     </div>
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Status</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Status</span>
                         <span class="font-bold text-slate-800">${req.status || 'Pending'}</span>
                     </div>
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Resident Name</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Resident Name</span>
                         <span class="text-slate-800 font-medium">${req.resident_name || req.residentName || req.fullName || 'N/A'}</span>
                     </div>
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Document Requested</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Document Requested</span>
                         <span class="text-slate-800 font-medium">${req.document_type || req.documentType || req.documentName || 'N/A'}</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Submitted Attachment</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Submitted Attachment</span>
                         ${fileDisplay}
                     </div>
                     <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Purpose</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Purpose</span>
                         <span class="text-slate-800 font-medium">${req.purpose || 'Not specified'}</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-badge">Date Submitted</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Date Submitted</span>
                         <span class="text-slate-800 font-medium">${req.date_submitted || req.dateSubmitted || 'N/A'}</span>
                     </div>
                     ${rejectionReasonDisplay}
