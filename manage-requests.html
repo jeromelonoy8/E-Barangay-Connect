@@ -16,7 +16,7 @@
 <body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen flex flex-col">
 
     <!-- Top Navigation Bar -->
-    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+    <nav class="nav-header text-white shadow-sm">
         <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
             <div class="flex items-center space-x-2 font-semibold text-lg tracking-wide">
                 <span>Barangay Admin Portal</span>
@@ -42,8 +42,8 @@
                 </a>
 
                 <!-- Profile Link & Button -->
-                <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800/80 pl-4">
-                    <div id="navAvatarContainer" class="w-6 h-6 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
+                <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer nav-profile-divider">
+                    <div id="navAvatarContainer" class="w-6 h-6 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center avatar-initial overflow-hidden shrink-0">
                         <span id="navAvatarInitial">A</span>
                     </div>
                     <span id="navProfileName">Profile</span>
@@ -92,7 +92,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
+                        <tr class="bg-slate-50 border-b border-slate-200 text-table-header uppercase font-bold text-slate-500 tracking-wider">
                             <th class="p-4">Request ID</th>
                             <th class="p-4">Resident Name</th>
                             <th class="p-4">Document Type</th>
@@ -110,7 +110,7 @@
     </main>
 
     <!-- Request Details Modal -->
-    <div id="requestDetailsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div id="requestDetailsModal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
             <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
                 <h3 class="font-bold text-sm">Request Details</h3>
@@ -128,19 +128,19 @@
     </div>
 
     <!-- Admin Profile Modal -->
-    <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
+    <div id="profileModal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden modal-max-height flex flex-col">
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
                         <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden avatar-border shadow-sm">A</div>
-                        <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
+                        <div class="absolute inset-0 camera-overlay rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white camera-icon-text">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
-                        <p id="modalProfileRole" class="text-[11px] text-blue-200">System Admin</p>
+                        <p id="modalProfileRole" class="text-profile-subtext text-blue-200">System Admin</p>
                     </div>
                 </div>
                 <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
@@ -155,19 +155,19 @@
                     <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Details</h4>
                     
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Username</label>
+                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Username</label>
                         <input type="text" id="profileUsername" disabled 
                             class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed">
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Email Address *</label>
+                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Email Address *</label>
                         <input type="email" id="profileEmail" required placeholder="official@barangay.gov.ph" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
+                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
                         <input type="tel" id="profilePhone" required placeholder="09123456789" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
@@ -184,17 +184,17 @@
                 <form id="changePasswordForm" onsubmit="handleChangePassword(event)" class="space-y-3">
                     <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Security & Password</h4>
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Current Password</label>
+                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Current Password</label>
                         <input type="password" id="currentPassword" required placeholder="Enter current password" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Password</label>
+                        <label class="block text-form-label font-semibold text-slate-600 mb-1">New Password</label>
                         <input type="password" id="newPassword" required placeholder="Enter new password" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Confirm New Password</label>
+                        <label class="block text-form-label font-semibold text-slate-600 mb-1">Confirm New Password</label>
                         <input type="password" id="confirmPassword" required placeholder="Confirm new password" 
                             class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
@@ -266,15 +266,28 @@
             }
         }
 
-        function loadRequestsTable() {
-            const stored = localStorage.getItem('documentRequests');
-            allRequests = stored ? JSON.parse(stored) : [];
-            renderRequests(allRequests);
+        async function loadRequestsTable() {
+            try {
+                const res = await fetch('/api/requests');
+                if (res.ok) {
+                    allRequests = await res.json();
+                    renderRequests(allRequests);
+                } else {
+                    const stored = localStorage.getItem('documentRequests');
+                    allRequests = stored ? JSON.parse(stored) : [];
+                    renderRequests(allRequests);
+                }
+            } catch (err) {
+                console.error('API Fetch failed, using localStorage fallback:', err);
+                const stored = localStorage.getItem('documentRequests');
+                allRequests = stored ? JSON.parse(stored) : [];
+                renderRequests(allRequests);
+            }
         }
 
         function renderRequests(requestsList) {
             const tbody = document.getElementById('requestsTableBody');
-            if (requestsList.length === 0) {
+            if (!requestsList || requestsList.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" class="text-center py-12 text-slate-400">
@@ -287,15 +300,23 @@
             }
 
             tbody.innerHTML = requestsList.map((req, idx) => {
-                const reqId = req.id || `REQ-00${idx + 1}`;
-                const name = req.residentName || req.fullName || 'Resident User';
-                const type = req.documentType || req.documentName || 'Barangay Document';
-                const date = req.dateSubmitted || '2026-09-23';
+                const rawId = req.id || req.request_id;
+                const reqId = rawId ? `REQ-00${rawId}` : `REQ-00${idx + 1}`;
+                const rawDbId = rawId || (idx + 1);
+                const name = req.resident_name || req.residentName || req.fullName || 'Resident User';
+                const type = req.document_type || req.documentType || req.documentName || 'Barangay Document';
+                const dateRaw = req.date_submitted || req.dateSubmitted || '2026-09-23';
+                const date = typeof dateRaw === 'string' ? dateRaw.split('T')[0] : new Date(dateRaw).toISOString().split('T')[0];
                 const status = req.status || 'Pending';
+                const fileUrl = req.file_url || req.fileUrl || '';
 
-                let badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
-                if (status === 'Approved' || status === 'Ready') badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                if (status === 'Rejected') badgeStyle = 'bg-red-100 text-red-800 border-red-200';
+                let badgeStyle = 'badge-pending';
+                if (status === 'Approved' || status === 'Ready' || status === 'APPROVED_BOOK_APPOINTMENT' || status === 'READY_FOR_PICKUP') badgeStyle = 'badge-approved';
+                if (status === 'Rejected') badgeStyle = 'badge-rejected';
+
+                const viewFileBtn = fileUrl 
+                    ? `<a href="${fileUrl}" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 text-badge transition inline-block">View File</a>`
+                    : `<span class="text-slate-400 text-badge italic mr-1">No File</span>`;
 
                 return `
                     <tr class="hover:bg-slate-50 table-row-transition">
@@ -304,16 +325,17 @@
                         <td class="p-4 text-slate-600">${type}</td>
                         <td class="p-4 text-slate-500">${date}</td>
                         <td class="p-4">
-                            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">${status}</span>
+                            <span class="text-badge font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">${status}</span>
                         </td>
                         <td class="p-4 text-center space-x-1">
-                            <button onclick="viewRequestDetails('${reqId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
+                            ${viewFileBtn}
+                            <button onclick="viewRequestDetails('${rawDbId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-badge transition">
                                 View
                             </button>
-                            <button onclick="updateStatus('${reqId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px] transition">
+                            <button onclick="updateStatus('${rawDbId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-badge transition">
                                 Approve
                             </button>
-                            <button onclick="updateStatus('${reqId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-[11px] transition">
+                            <button onclick="updateStatus('${rawDbId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-badge transition">
                                 Reject
                             </button>
                         </td>
@@ -322,46 +344,63 @@
             }).join('');
         }
 
-        function viewRequestDetails(reqId) {
-            const req = allRequests.find((r, idx) => (r.id || `REQ-00${idx + 1}`) === reqId);
+        function viewRequestDetails(dbId) {
+            const req = allRequests.find((r, idx) => String(r.id || r.request_id || (idx + 1)) === String(dbId));
             if (!req) return;
 
             const modalBody = document.getElementById('detailsModalBody');
             const modalActions = document.getElementById('detailsModalActions');
+            
+            const fileUrl = req.file_url || req.fileUrl || '';
+            const fileDisplay = fileUrl 
+                ? `<a href="${fileUrl}" target="_blank" class="text-blue-600 font-bold underline hover:text-blue-800">Click to View Attachment / File</a>` 
+                : `<span class="text-slate-400 italic">No file attached</span>`;
+
+            const rejectionReasonDisplay = req.rejection_reason 
+                ? `<div class="col-span-2 bg-red-50 p-2.5 rounded-xl border border-red-200">
+                    <span class="block text-red-600 font-semibold uppercase text-badge">Rejection Reason</span>
+                    <span class="text-red-800 font-medium">${req.rejection_reason}</span>
+                   </div>`
+                : '';
 
             modalBody.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Request ID</span>
-                        <span class="font-bold text-slate-800">${req.id || reqId}</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Request ID</span>
+                        <span class="font-bold text-slate-800">REQ-00${req.id || req.request_id || dbId}</span>
                     </div>
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Status</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Status</span>
                         <span class="font-bold text-slate-800">${req.status || 'Pending'}</span>
                     </div>
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Resident Name</span>
-                        <span class="text-slate-800 font-medium">${req.residentName || req.fullName || 'N/A'}</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Resident Name</span>
+                        <span class="text-slate-800 font-medium">${req.resident_name || req.residentName || req.fullName || 'N/A'}</span>
                     </div>
                     <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Document Requested</span>
-                        <span class="text-slate-800 font-medium">${req.documentType || req.documentName || 'N/A'}</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Document Requested</span>
+                        <span class="text-slate-800 font-medium">${req.document_type || req.documentType || req.documentName || 'N/A'}</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Purpose</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Submitted Attachment</span>
+                        ${fileDisplay}
+                    </div>
+                    <div class="col-span-2">
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Purpose</span>
                         <span class="text-slate-800 font-medium">${req.purpose || 'Not specified'}</span>
                     </div>
                     <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Date Submitted</span>
-                        <span class="text-slate-800 font-medium">${req.dateSubmitted || 'N/A'}</span>
+                        <span class="block text-slate-400 font-semibold uppercase text-badge">Date Submitted</span>
+                        <span class="text-slate-800 font-medium">${req.date_submitted || req.dateSubmitted || 'N/A'}</span>
                     </div>
+                    ${rejectionReasonDisplay}
                 </div>
             `;
 
             modalActions.innerHTML = `
                 <button onclick="closeDetailsModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">Close</button>
-                <button onclick="updateStatus('${reqId}', 'Approved'); closeDetailsModal();" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve Request</button>
-                <button onclick="updateStatus('${reqId}', 'Rejected'); closeDetailsModal();" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Reject Request</button>
+                <button onclick="updateStatus('${dbId}', 'Approved'); closeDetailsModal();" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve Request</button>
+                <button onclick="updateStatus('${dbId}', 'Rejected'); closeDetailsModal();" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Reject Request</button>
             `;
 
             document.getElementById('requestDetailsModal').classList.remove('hidden');
@@ -371,14 +410,47 @@
             document.getElementById('requestDetailsModal').classList.add('hidden');
         }
 
-        function updateStatus(reqId, newStatus) {
+        async function updateStatus(dbId, newStatus) {
+            let rejectionReason = null;
+            if (newStatus === 'Rejected') {
+                rejectionReason = prompt("Please enter the reason for rejecting this request:");
+                if (rejectionReason === null) return;
+                if (!rejectionReason.trim()) {
+                    alert("A rejection reason is required so the resident knows what to correct.");
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`/api/requests/${dbId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: newStatus,
+                        rejection_reason: rejectionReason
+                    })
+                });
+
+                if (response.ok) {
+                    loadRequestsTable();
+                } else {
+                    updateStatusLocalStorage(dbId, newStatus, rejectionReason);
+                }
+            } catch (err) {
+                console.error('API call failed, falling back to local state:', err);
+                updateStatusLocalStorage(dbId, newStatus, rejectionReason);
+            }
+        }
+
+        function updateStatusLocalStorage(dbId, newStatus, rejectionReason) {
             const stored = localStorage.getItem('documentRequests');
             if (!stored) return;
             let requests = JSON.parse(stored);
 
-            const index = requests.findIndex((r, idx) => (r.id || `REQ-00${idx + 1}`) === reqId);
+            const index = requests.findIndex((r, idx) => String(r.id || r.request_id || (idx + 1)) === String(dbId));
             if (index !== -1) {
                 requests[index].status = newStatus;
+                if (rejectionReason) requests[index].rejection_reason = rejectionReason;
                 localStorage.setItem('documentRequests', JSON.stringify(requests));
                 loadRequestsTable();
             }
@@ -389,9 +461,10 @@
             const filter = document.getElementById('statusFilter').value;
 
             const filtered = allRequests.filter(req => {
-                const nameMatch = (req.residentName || req.fullName || '').toLowerCase().includes(search);
-                const idMatch = (req.id || '').toLowerCase().includes(search);
-                const matchesSearch = nameMatch || idMatch;
+                const name = (req.resident_name || req.residentName || req.fullName || '').toLowerCase();
+                const id = String(req.id || req.request_id || '').toLowerCase();
+                const formattedId = `req-00${id}`;
+                const matchesSearch = name.includes(search) || id.includes(search) || formattedId.includes(search);
 
                 const reqStatus = req.status || 'Pending';
                 const matchesStatus = filter === 'All' || reqStatus === filter;

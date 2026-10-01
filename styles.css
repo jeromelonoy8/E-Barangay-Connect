@@ -394,6 +394,7 @@ body.senior-mode .slot-badge {
     color: #9f1239;
     border: 1px solid rgba(254, 205, 211, 0.5);
 }
+
 /* ==========================================================================
    Manage Requests Table & Document Preview Modal Styles
    ========================================================================== */
@@ -511,17 +512,25 @@ body.senior-mode .slot-badge {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
+
 /* ==========================================================================
    Announcements Styles
    ========================================================================== */
 
-/* Announcement Card Form */
+/* Announcement Card Form & Banners */
 .announcement-card {
     background-color: #ffffff;
     border-radius: 1rem;
     padding: 1.5rem;
     border: 1px solid #f1f5f9;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.announcement-card.featured-announcement {
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+    border-left: 4px solid #1e3a8a;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
 }
 
 .announcement-input {
@@ -595,6 +604,7 @@ body.senior-mode .slot-badge {
 .btn-announcement-delete:hover {
     color: #b91c1c;
 }
+
 /* ==========================================================================
    Official / Staff Management Styles
    ========================================================================== */
@@ -653,6 +663,7 @@ body.senior-mode .slot-badge {
 .btn-secondary-sm:hover {
     background-color: #e2e8f0;
 }
+
 /* ==========================================================================
    Resident Profile & Document File Details Styles
    ========================================================================== */
@@ -714,17 +725,10 @@ body.senior-mode .slot-badge {
     background-color: #eff6ff;
     border-color: #bfdbfe;
 }
-/* Announcement Cards */
-.announcement-card {
-    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
-    border-left: 4px solid #1e3a8a;
-    border-radius: 0.75rem;
-    padding: 1rem 1.25rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-}
-/* ==========================================
+
+/* ==========================================================================
    Add Official Page Styles
-   ========================================== */
+   ========================================================================== */
 
 .custom-input {
     transition: all 0.2s ease-in-out;
