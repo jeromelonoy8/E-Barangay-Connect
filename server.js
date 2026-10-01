@@ -159,7 +159,6 @@ app.post('/api/auth/login', (req, res) => {
             return res.status(403).json({ error: 'Access denied. Please use the Admin Portal.' });
         }
 
-        // Support both hashed passwords and direct plain text fallback
         let isMatch = false;
         try {
             isMatch = await bcrypt.compare(password, user.password_hash);
@@ -205,7 +204,6 @@ app.post('/api/auth/admin-login', (req, res) => {
             return res.status(403).json({ error: 'Access denied: Account is not authorized as an Admin.' });
         }
 
-        // Support both hashed passwords and direct plain text fallback
         let isMatch = false;
         try {
             isMatch = await bcrypt.compare(password, admin.password_hash);
@@ -242,10 +240,10 @@ app.get('/api/documents', (req, res) => {
 
 // 5. Submit Document Request & Book Appointment
 app.post('/api/requests', (req, res) => {
-    const { user_id, doc_type_id, scheduled_date, scheduled_time_slot } = req.body;
-    const sql = 'INSERT INTO document_requests (user_id, doc_type_id, scheduled_date, scheduled_time_slot) VALUES (?, ?, ?, ?)';
+    const { user_id, doc_type_id, scheduled_date, scheduled_time_slot, file_url } = req.body;
+    const sql = 'INSERT INTO document_requests (user_id, doc_type_id, scheduled_date, scheduled_time_slot, file_url) VALUES (?, ?, ?, ?, ?)';
     
-    db.query(sql, [user_id, doc_type_id, scheduled_date, scheduled_time_slot], (err, result) => {
+    db.query(sql, [user_id, doc_type_id, scheduled_date, scheduled_time_slot, file_url || null], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         
         sendSMSNotification(user_id, `E-BARANGAY CONNECT: Your document request #${result.insertId} has been submitted for ${scheduled_date}.`);
@@ -253,34 +251,40 @@ app.post('/api/requests', (req, res) => {
     });
 });
 
-// 6. Admin Update Document Request Status
-app.patch('/api/requests/:id/status', (req, res) => {
+// 6. Admin Update Document Request Status (Supports PATCH and PUT)
+const handleStatusUpdate = (req, res) => {
     const requestId = req.params.id;
-    const { status } = req.body;
+    const { status, rejection_reason } = req.body;
 
     const getReqSql = 'SELECT user_id FROM document_requests WHERE request_id = ?';
     db.query(getReqSql, [requestId], (err, rows) => {
         if (err || rows.length === 0) return res.status(404).json({ error: 'Request not found' });
 
         const userId = rows[0].user_id;
-        const updateSql = 'UPDATE document_requests SET status = ? WHERE request_id = ?';
+        const updateReason = status === 'Rejected' ? (rejection_reason || null) : null;
+        const updateSql = 'UPDATE document_requests SET status = ?, rejection_reason = ? WHERE request_id = ?';
 
-        db.query(updateSql, [status, requestId], (err) => {
+        db.query(updateSql, [status, updateReason, requestId], (err) => {
             if (err) return res.status(500).json({ error: err.message });
 
             let smsMessage = `Update: Your request #${requestId} status is now "${status}".`;
 
             if (status === 'APPROVED_BOOK_APPOINTMENT' || status === 'Approved') {
-                smsMessage = `E-BARANGAY CONNECT: Your document request #${requestId} has been APPROVED! Please log in to your portal account to book a date and time slot for pick-up.`;
+                smsMessage = `E-BARANGAY CONNECT: Your document request #${requestId} has been APPROVED! Please log in to your portal account to check details.`;
             } else if (status === 'READY_FOR_PICKUP') {
                 smsMessage = `E-BARANGAY CONNECT: Your document request #${requestId} is READY FOR PICKUP at the Barangay Hall on your scheduled slot.`;
+            } else if (status === 'Rejected') {
+                smsMessage = `E-BARANGAY CONNECT: Your document request #${requestId} was REJECTED.${updateReason ? ` Reason: ${updateReason}` : ''} Please log in to resubmit requirements.`;
             }
 
             sendSMSNotification(userId, smsMessage);
             res.json({ message: `Request #${requestId} status updated to ${status}` });
         });
     });
-});
+};
+
+app.patch('/api/requests/:id/status', handleStatusUpdate);
+app.put('/api/requests/:id/status', handleStatusUpdate);
 
 // Dynamic Port Binding for Deployment
 const PORT = process.env.PORT || 5000;
