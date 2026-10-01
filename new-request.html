@@ -116,7 +116,7 @@
                     </select>
                 </div>
 
-                <!-- Dynamic Requirements Box (Appears when Document Type is chosen) -->
+                <!-- Dynamic Requirements Box -->
                 <div id="requirementsBox" class="hidden bg-blue-50/60 border border-blue-100 rounded-xl p-4 transition-all duration-200">
                     <div class="flex items-center space-x-2 text-[#1e3a8a] font-bold text-xs mb-2">
                         <i class="fa-solid fa-circle-info text-sm"></i>
@@ -269,23 +269,41 @@
                 return;
             }
 
+            if (!currentBase64File) {
+                alert("Please attach a valid ID or document image.");
+                return;
+            }
+
             const storedRequests = localStorage.getItem('documentRequests');
             let requests = storedRequests ? JSON.parse(storedRequests) : [];
 
+            // Prevent duplicate REQ-00 REQ-00 formatting bugs
             const newId = `REQ-00${requests.length + 1}`;
             const today = new Date().toISOString().split('T')[0];
 
+            // Get active logged in resident name if available
+            const residentUser = JSON.parse(localStorage.getItem('residentUser') || '{}');
+            const residentName = residentUser.name || residentUser.fullName || "Jerome Lonoy";
+
             const newRequestObj = {
                 id: newId,
-                residentName: "Jerome Lonoy",
+                request_id: newId,
+                resident_name: residentName,
+                residentName: residentName,
+                document_type: docType,
                 documentType: docType,
                 purpose: purpose,
+                date_submitted: today,
                 dateSubmitted: today,
                 status: "Pending",
+                // Direct file properties so manage-requests.html reads it instantly
+                file_url: currentBase64File,
+                fileUrl: currentBase64File,
+                attachment: currentBase64File,
                 files: [
                     {
                         name: currentFileName || "Attached_Document.png",
-                        dataUrl: currentBase64File || ""
+                        dataUrl: currentBase64File
                     }
                 ]
             };
