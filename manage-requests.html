@@ -310,9 +310,12 @@
                 const status = req.status || 'Pending';
                 const fileUrl = req.file_url || req.fileUrl || '';
 
-                let badgeStyle = 'badge-pending';
-                if (status === 'Approved' || status === 'Ready' || status === 'APPROVED_BOOK_APPOINTMENT' || status === 'READY_FOR_PICKUP') badgeStyle = 'badge-approved';
-                if (status === 'Rejected') badgeStyle = 'badge-rejected';
+                let badgeStyle = 'bg-amber-100 text-amber-700';
+                if (status === 'Approved' || status === 'Ready' || status === 'APPROVED_BOOK_APPOINTMENT' || status === 'READY_FOR_PICKUP') {
+                    badgeStyle = 'bg-emerald-100 text-emerald-700';
+                } else if (status === 'Rejected') {
+                    badgeStyle = 'bg-rose-100 text-rose-700';
+                }
 
                 const viewFileBtn = fileUrl 
                     ? `<a href="${fileUrl}" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 text-badge transition inline-block">View File</a>`
@@ -332,12 +335,14 @@
                             <button onclick="viewRequestDetails('${rawDbId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-badge transition">
                                 View
                             </button>
-                            <button onclick="updateStatus('${rawDbId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-badge transition">
-                                Approve
-                            </button>
-                            <button onclick="updateStatus('${rawDbId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-badge transition">
-                                Reject
-                            </button>
+                            ${status.toLowerCase() === 'pending' ? `
+                                <button onclick="updateStatus('${rawDbId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-badge transition">
+                                    Approve
+                                </button>
+                                <button onclick="updateStatus('${rawDbId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-badge transition">
+                                    Reject
+                                </button>
+                            ` : ''}
                         </td>
                     </tr>
                 `;
@@ -358,7 +363,7 @@
 
             const rejectionReasonDisplay = req.rejection_reason 
                 ? `<div class="col-span-2 bg-red-50 p-2.5 rounded-xl border border-red-200">
-                    <span class="block text-red-600 font-semibold uppercase text-badge">Rejection Reason</span>
+                    <span class="block text-red-600 font-semibold uppercase text-badge">Rejection Reason Note</span>
                     <span class="text-red-800 font-medium">${req.rejection_reason}</span>
                    </div>`
                 : '';
@@ -399,8 +404,10 @@
 
             modalActions.innerHTML = `
                 <button onclick="closeDetailsModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">Close</button>
-                <button onclick="updateStatus('${dbId}', 'Approved'); closeDetailsModal();" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve Request</button>
-                <button onclick="updateStatus('${dbId}', 'Rejected'); closeDetailsModal();" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Reject Request</button>
+                ${(req.status || 'Pending').toLowerCase() === 'pending' ? `
+                    <button onclick="updateStatus('${dbId}', 'Approved'); closeDetailsModal();" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve Request</button>
+                    <button onclick="updateStatus('${dbId}', 'Rejected'); closeDetailsModal();" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Reject Request</button>
+                ` : ''}
             `;
 
             document.getElementById('requestDetailsModal').classList.remove('hidden');
