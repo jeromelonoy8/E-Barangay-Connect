@@ -1,11 +1,15 @@
 {
   "name": "e-barangay-connect",
   "version": "1.0.0",
-  "description": "",
+  "description": "E-Barangay Connect backend API: resident document requests, appointments, announcements and SMS notifications.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "setup": "node database/setup.js",
+    "migrate": "node database/migrate.js",
+    "create-admin": "node database/create-admin.js",
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\""
   },
   "keywords": [],
   "author": "",
@@ -17,6 +21,12 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.3",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
     "mysql2": "^3.24.4"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
