@@ -57,11 +57,11 @@
     </div>
 
     <script>
-        // Local copies (localhost, Live Server, or opened as a file) talk to the local API on port 5000;
-        // a deployed copy talks to the server it was loaded from.
+        // Local copies (localhost, Live Server, or opened as a file) talk to the local API on port 5000.
+        // Deployed copies (the pages are hosted on Vercel) talk to the backend hosted on Render.
         const API_BASE = ['localhost', '127.0.0.1'].includes(location.hostname) || location.protocol === 'file:'
             ? 'http://localhost:5000'
-            : '';
+            : 'https://e-barangay-connect.onrender.com';
 
         lucide.createIcons();
 
