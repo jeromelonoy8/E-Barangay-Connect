@@ -125,9 +125,7 @@
         </div>
 
         <!-- Barangay Activity Charts -->
-        <div id="activityCharts">
-            <!-- Loaded from the API -->
-        </div>
+        <div id="activityCharts"></div>
 
         <!-- Dashboard Split Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -145,7 +143,7 @@
             <div class="space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-base font-bold text-slate-900">Registered Officials</h2>
-                    <span id="officialsCountBadge" class="bg-blue-100 text-[#1e3a8a] text-[11px] font-bold px-2 py-0.5 rounded-full"></span>
+                    <span id="officialsCountBadge" class="bg-blue-100 text-[#1e3a8a] text-[11px] font-bold px-2 py-0.5 rounded-full">0</span>
                 </div>
                 
                 <p class="text-xs text-slate-400">Manage registered barangay personnel accounts and authorization rights.</p>
@@ -165,14 +163,10 @@
     <!-- Admin Profile Modal -->
     <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
-            
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
                         <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0"></div>
-                        <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
-                            <i class="fa-solid fa-camera"></i>
-                        </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
@@ -186,67 +180,22 @@
 
             <div class="p-6 overflow-y-auto space-y-5">
                 <input type="file" id="profilePicInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-
                 <form id="profileDetailsForm" onsubmit="handleSaveProfileDetails(event)" class="space-y-3">
                     <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Details</h4>
-                    
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">Username</label>
-                        <input type="text" id="profileUsername" disabled 
-                            class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed">
+                        <input type="text" id="profileUsername" disabled class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed">
                     </div>
-
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">Email Address *</label>
-                        <input type="email" id="profileEmail" required placeholder="official@barangay.gov.ph" 
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                        <input type="email" id="profileEmail" required placeholder="official@barangay.gov.ph" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
-
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
-                        <input type="tel" id="profilePhone" required placeholder="09123456789" 
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                        <input type="tel" id="profilePhone" required placeholder="09123456789" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
-
                     <div class="pt-1 flex justify-end">
-                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition">
-                            Save Details
-                        </button>
-                    </div>
-                </form>
-
-                <hr class="border-slate-100">
-
-                <form id="changePasswordForm" onsubmit="handleChangePassword(event)" class="space-y-3">
-                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Security & Password</h4>
-                    
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Current Password</label>
-                        <input type="password" id="currentPassword" required placeholder="Enter current password" 
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">New Password</label>
-                        <input type="password" id="newPassword" required placeholder="Enter new password" 
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Confirm New Password</label>
-                        <input type="password" id="confirmPassword" required placeholder="Confirm new password" 
-                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
-                    </div>
-
-                    <div id="modalAlert" class="hidden text-xs text-center py-2 px-3 rounded-lg font-medium"></div>
-
-                    <div class="pt-2 flex space-x-2">
-                        <button type="button" onclick="closeProfileModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
-                            Close
-                        </button>
-                        <button type="submit" class="w-1/2 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">
-                            Update Password
-                        </button>
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition">Save Details</button>
                     </div>
                 </form>
             </div>
@@ -259,7 +208,9 @@
     <script>
         const session = Api.requireSession('admin');
 
-        lucide.createIcons();
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
 
         if (session) {
             Api.setupAdminNav({ onProfileUpdated: loadOfficialsData });
@@ -269,17 +220,20 @@
             loadOfficialsData();
         }
 
-        // Bookings this month (cards + chart) and the most requested documents.
         async function loadActivity() {
             const container = document.getElementById('activityCharts');
             try {
                 const overview = await Api.get('admin', '/api/stats/overview');
-                document.getElementById('statBookingsMonth').innerText = overview.bookings.total;
-                document.getElementById('statBookingsResidents').innerText =
-                    `${overview.bookings.residents} resident${overview.bookings.residents === 1 ? '' : 's'} · ${overview.month_label}`;
-                DashboardCharts.render(container, overview);
+                if (overview && overview.bookings) {
+                    document.getElementById('statBookingsMonth').innerText = overview.bookings.total || 0;
+                    document.getElementById('statBookingsResidents').innerText =
+                        `${overview.bookings.residents || 0} resident${overview.bookings.residents === 1 ? '' : 's'} · ${overview.month_label || 'October 2026'}`;
+                }
+                if (typeof DashboardCharts !== 'undefined' && container) {
+                    DashboardCharts.render(container, overview);
+                }
             } catch (err) {
-                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+                if (container) container.innerHTML = `<p class="text-xs text-slate-400 p-4">No chart activity loaded.</p>`;
             }
         }
 
@@ -287,7 +241,6 @@
             return (Api.session('admin').user || {}).role === 'admin';
         }
 
-        // Only full admins can register officials; other officials don't see those buttons.
         function hideAdminOnlyLinks() {
             if (isAdmin()) return;
             document.querySelectorAll('main a[href="add-official.html"]').forEach(link => link.classList.add('hidden'));
@@ -295,92 +248,93 @@
 
         async function loadDashboardData() {
             const recentContainer = document.getElementById('recentRequestsContainer');
-            let stats;
             try {
-                stats = await Api.get('admin', '/api/admin/stats');
-            } catch (err) {
-                recentContainer.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
-                return;
-            }
+                const stats = await Api.get('admin', '/api/admin/stats');
+                
+                const byStatus = stats.requests.by_status || {};
+                document.getElementById('statTotalRequests').innerText = stats.requests.total || 0;
+                document.getElementById('statPendingRequests').innerText = byStatus['Pending'] || byStatus['PENDING'] || 0;
+                
+                const approvedCount = (byStatus['Approved'] || byStatus['APPROVED'] || 0) + 
+                                     (byStatus['Ready for Pickup'] || byStatus['READY_FOR_PICKUP'] || 0) + 
+                                     (byStatus['Completed'] || byStatus['COMPLETED'] || 0);
+                                     
+                document.getElementById('statApprovedRequests').innerText = approvedCount;
+                document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || byStatus['REJECTED'] || 0;
+                document.getElementById('statResidents').innerText = stats.residents || 0;
 
-            const byStatus = stats.requests.by_status;
-            document.getElementById('statTotalRequests').innerText = stats.requests.total;
-            document.getElementById('statPendingRequests').innerText = byStatus['Pending'] || 0;
-            document.getElementById('statApprovedRequests').innerText =
-                (byStatus['Approved'] || 0) + (byStatus['Ready for Pickup'] || 0) + (byStatus['Completed'] || 0);
-            document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || 0;
-            document.getElementById('statResidents').innerText = stats.residents;
+                const recentList = stats.recent_requests || [];
+                if (recentList.length === 0) {
+                    recentContainer.innerHTML = `
+                        <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                            <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
+                            <p class="text-xs text-slate-500 font-medium">No document requests submitted yet.</p>
+                        </div>
+                    `;
+                    return;
+                }
 
-            if (stats.recent_requests.length === 0) {
-                recentContainer.innerHTML = `
-                    <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-                        <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
-                        <p class="text-xs text-slate-500 font-medium">No document requests submitted yet.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            recentContainer.innerHTML = stats.recent_requests.map(req => `
-                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-[10px] font-bold text-slate-400 w-16">${Api.escape(req.reference_no)}</span>
-                        <div>
-                            <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name)}</h4>
-                            <p class="text-[10px] text-slate-400">${Api.escape(req.document_type)}</p>
+                recentContainer.innerHTML = recentList.map(req => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-[10px] font-bold text-slate-400 w-24">${Api.escape(req.reference_no || req.id || 'REQ-000')}</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name || req.full_name || 'Resident')}</h4>
+                                <p class="text-[10px] text-slate-400">${Api.escape(req.document_type || 'Document')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at || req.date_submitted))}</span>
+                            <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at))}</span>
-                        <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
-                    </div>
-                </div>
-            `).join('');
+                `).join('');
+            } catch (err) {
+                recentContainer.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+            }
         }
 
         async function loadOfficialsData() {
             const container = document.getElementById('officialsListContainer');
-            let officials;
             try {
-                officials = await Api.get('admin', '/api/officials');
-            } catch (err) {
-                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
-                return;
-            }
+                const officials = await Api.get('admin', '/api/officials');
+                const me = Api.session('admin').user || {};
+                document.getElementById('officialsCountBadge').innerText = officials.length;
+                
+                container.innerHTML = officials.map(official => {
+                    const name = official.full_name || official.username;
+                    const avatar = official.profile_pic
+                        ? `<img src="${Api.escape(official.profile_pic)}" class="w-8 h-8 rounded-full object-cover">`
+                        : `<div class="w-8 h-8 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-xs">${Api.escape(Api.initials(name))}</div>`;
+                    const canDelete = isAdmin() && official.id !== me.id;
 
-            const me = Api.session('admin').user || {};
-            document.getElementById('officialsCountBadge').innerText = officials.length;
-            container.innerHTML = officials.map(official => {
-                const name = official.full_name || official.username;
-                const avatar = official.profile_pic
-                    ? `<img src="${Api.escape(official.profile_pic)}" class="w-8 h-8 rounded-full object-cover">`
-                    : `<div class="w-8 h-8 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-xs">${Api.escape(Api.initials(name))}</div>`;
-                const canDelete = isAdmin() && official.id !== me.id;
-
-                return `
-                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 ${official.is_active ? '' : 'opacity-60'}">
-                        <div class="flex items-center space-x-3">
-                            ${avatar}
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-900">${Api.escape(name)}${official.is_active ? '' : ' <span class="text-[10px] font-medium text-slate-400">(inactive)</span>'}</h4>
-                                <p class="text-[10px] text-slate-400 font-medium">${Api.escape(Api.staffTitle(official))}</p>
+                    return `
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 ${official.is_active ? '' : 'opacity-60'}">
+                            <div class="flex items-center space-x-3">
+                                ${avatar}
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-900">${Api.escape(name)}${official.is_active ? '' : ' <span class="text-[10px] font-medium text-slate-400">(inactive)</span>'}</h4>
+                                    <p class="text-[10px] text-slate-400 font-medium">${Api.escape(Api.staffTitle(official))}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] font-medium text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md">@${Api.escape(official.username)}</span>
+                                ${canDelete ? `
+                                    <button onclick="deleteOfficialAccount(${official.id}, '${Api.escape(name).replace(/'/g, '&#39;')}')" title="Delete Official Account" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] font-medium text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md">@${Api.escape(official.username)}</span>
-                            ${canDelete ? `
-                                <button onclick="deleteOfficialAccount(${official.id}, '${Api.escape(name).replace(/'/g, '&#39;')}')" title="Delete Official Account" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition">
-                                    <i class="fa-solid fa-trash-can text-xs"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            } catch (err) {
+                if (container) container.innerHTML = `<p class="text-xs text-slate-400">No officials data available.</p>`;
+            }
         }
 
         async function deleteOfficialAccount(id, name) {
-            if (!confirm(`Are you sure you want to delete the official account for "${name}"? This action cannot be undone.`)) return;
+            if (!confirm(`Are you sure you want to delete the official account for "${name}"?`)) return;
             try {
                 await Api.request('admin', 'DELETE', `/api/officials/${id}`);
                 loadOfficialsData();

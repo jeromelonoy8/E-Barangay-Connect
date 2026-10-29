@@ -2,121 +2,55 @@ const { pool } = require('./db');
 
 async function seed() {
   try {
-    console.log(' Starting database seeding process...');
+    console.log(' Starting database seeding...');
 
-    const sql = `
-      INSERT INTO requests (id, full_name, document_type, purpose, status, date_submitted) VALUES
-      ('REQ-1001', 'Juan Dela Cruz', 'Barangay Clearance', 'Employment', 'PENDING', '2026-10-01'),
-      ('REQ-1002', 'Maria Clara Santos', 'Certificate of Indigency', 'Medical Assistance', 'APPROVED', '2026-10-01'),
-      ('REQ-1003', 'Jose Rizal', 'Barangay Residency', 'Bank Account Opening', 'COMPLETED', '2026-10-02'),
-      ('REQ-1004', 'Andres Bonifacio', 'Business Permit Clearance', 'New Business', 'PENDING', '2026-10-02'),
-      ('REQ-1005', 'Apolinario Mabini', 'Certificate of Good Moral', 'School Requirement', 'COMPLETED', '2026-10-03'),
-      ('REQ-1006', 'Emilio Aguinaldo', 'Barangay Clearance', 'ID Requirement', 'APPROVED', '2026-10-03'),
-      ('REQ-1007', 'Melchora Aquino', 'Certificate of Indigency', 'Financial Assistance', 'COMPLETED', '2026-10-04'),
-      ('REQ-1008', 'Gabriela Silang', 'Barangay Residency', 'Postal ID Application', 'REJECTED', '2026-10-04'),
-      ('REQ-1009', 'Juan Luna', 'Barangay Clearance', 'Travel Visa Requirement', 'COMPLETED', '2026-10-05'),
-      ('REQ-1010', 'Marcelo H. Del Pilar', 'Business Permit Clearance', 'Business Renewal', 'APPROVED', '2026-10-05'),
-      ('REQ-1011', 'Antonio Luna', 'Barangay Clearance', 'Employment', 'PENDING', '2026-10-06'),
-      ('REQ-1012', 'Gregorio Del Pilar', 'Certificate of Indigency', 'Scholarship Application', 'COMPLETED', '2026-10-06'),
-      ('REQ-1013', 'Emilio Jacinto', 'Barangay Residency', 'Driver License Requirement', 'APPROVED', '2026-10-07'),
-      ('REQ-1014', 'Lapu-Lapu', 'Barangay Clearance', 'Police Clearance Requirement', 'COMPLETED', '2026-10-07'),
-      ('REQ-1015', 'Sultan Kudarat', 'Business Permit Clearance', 'New Business', 'PENDING', '2026-10-08'),
-      ('REQ-1016', 'Panday Pira', 'Certificate of Indigency', 'Burial Assistance', 'COMPLETED', '2026-10-08'),
-      ('REQ-1017', 'Diego Silang', 'Barangay Clearance', 'Employment', 'APPROVED', '2026-10-09'),
-      ('REQ-1018', 'Teresa Magbanua', 'Barangay Residency', 'School Transfer', 'PENDING', '2026-10-09'),
-      ('REQ-1019', 'Mariano Gomez', 'Certificate of Good Moral', 'Scholarship Application', 'COMPLETED', '2026-10-10'),
-      ('REQ-1020', 'Jose Burgos', 'Barangay Clearance', 'ID Requirement', 'REJECTED', '2026-10-10'),
-      ('REQ-1021', 'Jacinto Zamora', 'Certificate of Indigency', 'Medical Assistance', 'APPROVED', '2026-10-10'),
-      ('REQ-1022', 'Pedro Paterno', 'Barangay Residency', 'Passport Application', 'COMPLETED', '2026-10-11'),
-      ('REQ-1023', 'Felipe Agoncillo', 'Business Permit Clearance', 'Business Renewal', 'PENDING', '2026-10-11'),
-      ('REQ-1024', 'Graciano Lopez Jaena', 'Barangay Clearance', 'Employment', 'COMPLETED', '2026-10-12'),
-      ('REQ-1025', 'Mariano Ponce', 'Certificate of Indigency', 'Educational Financial Assistance', 'APPROVED', '2026-10-12'),
-      ('REQ-1026', 'Jose Palma', 'Barangay Residency', 'Bank Account Opening', 'PENDING', '2026-10-12'),
-      ('REQ-1027', 'Fernando Amorsolo', 'Barangay Clearance', 'Artist Guild Clearance', 'COMPLETED', '2026-10-13'),
-      ('REQ-1028', 'Guillermo Tolentino', 'Business Permit Clearance', 'New Business', 'APPROVED', '2026-10-13'),
-      ('REQ-1029', 'Nick Joaquin', 'Certificate of Good Moral', 'Employment Requirement', 'COMPLETED', '2026-10-14'),
-      ('REQ-1030', 'Jose Garcia Villa', 'Barangay Clearance', 'Passport Application', 'PENDING', '2026-10-14'),
-      ('REQ-1031', 'Carlos P. Romulo', 'Barangay Residency', 'Travel Visa Requirement', 'COMPLETED', '2026-10-14'),
-      ('REQ-1032', 'Manuel L. Quezon', 'Business Permit Clearance', 'Business Renewal', 'APPROVED', '2026-10-15'),
-      ('REQ-1033', 'Sergio Osmena', 'Barangay Clearance', 'Employment', 'PENDING', '2026-10-15'),
-      ('REQ-1034', 'Manuel Roxas', 'Certificate of Indigency', 'Medical Assistance', 'COMPLETED', '2026-10-15'),
-      ('REQ-1035', 'Elpidio Quirino', 'Barangay Residency', 'Senior Citizen Card Application', 'REJECTED', '2026-10-16'),
-      ('REQ-1036', 'Ramon Magsaysay', 'Barangay Clearance', 'Driver License Requirement', 'COMPLETED', '2026-10-16'),
-      ('REQ-1037', 'Carlos P. Garcia', 'Certificate of Indigency', 'Financial Assistance', 'APPROVED', '2026-10-16'),
-      ('REQ-1038', 'Diosdado Macapagal', 'Business Permit Clearance', 'New Business', 'COMPLETED', '2026-10-17'),
-      ('REQ-1039', 'Corazon Aquino', 'Barangay Residency', 'Postal ID Application', 'PENDING', '2026-10-17'),
-      ('REQ-1040', 'Fidel V. Ramos', 'Barangay Clearance', 'Employment', 'COMPLETED', '2026-10-17'),
-      ('REQ-1041', 'Joseph Estrada', 'Certificate of Indigency', 'Hospital Subsidy', 'PENDING', '2026-10-18'),
-      ('REQ-1042', 'Gloria Macapagal Arroyo', 'Business Permit Clearance', 'Business Renewal', 'APPROVED', '2026-10-18'),
-      ('REQ-1043', 'Benigno Aquino III', 'Barangay Clearance', 'Passport Application', 'COMPLETED', '2026-10-18'),
-      ('REQ-1044', 'Rodrigo Duterte', 'Barangay Residency', 'ID Requirement', 'PENDING', '2026-10-19'),
-      ('REQ-1045', 'Bongbong Marcos', 'Certificate of Good Moral', 'School Application', 'COMPLETED', '2026-10-19'),
-      ('REQ-1046', 'Sara Duterte', 'Barangay Clearance', 'Employment', 'APPROVED', '2026-10-19'),
-      ('REQ-1047', 'Leni Robredo', 'Certificate of Indigency', 'Scholarship', 'COMPLETED', '2026-10-20'),
-      ('REQ-1048', 'Manny Pacquiao', 'Business Permit Clearance', 'Gym Facility Permit', 'PENDING', '2026-10-20'),
-      ('REQ-1049', 'Francisco Balagtas', 'Barangay Residency', 'Bank Account Opening', 'COMPLETED', '2026-10-20'),
-      ('REQ-1050', 'Leandro Locsin', 'Barangay Clearance', 'Building Permit Requirement', 'APPROVED', '2026-10-21'),
-      ('REQ-1051', 'Juan Luna II', 'Certificate of Indigency', 'Medical Assistance', 'REJECTED', '2026-10-21'),
-      ('REQ-1052', 'Clara Asuncion', 'Barangay Residency', 'Postal ID Application', 'COMPLETED', '2026-10-21'),
-      ('REQ-1053', 'Pedro Calungsod', 'Certificate of Good Moral', 'Church Requirement', 'COMPLETED', '2026-10-22'),
-      ('REQ-1054', 'Lorenzo Ruiz', 'Barangay Clearance', 'Travel Visa Requirement', 'APPROVED', '2026-10-22'),
-      ('REQ-1055', 'Lea Salonga', 'Business Permit Clearance', 'Studio Permit', 'PENDING', '2026-10-22'),
-      ('REQ-1056', 'Pio Valenzuela', 'Barangay Clearance', 'Employment', 'COMPLETED', '2026-10-23'),
-      ('REQ-1057', 'Sancho Valenzuela', 'Certificate of Indigency', 'Educational Assistance', 'PENDING', '2026-10-23'),
-      ('REQ-1058', 'Ladislaw Diwa', 'Barangay Residency', 'ID Renewal', 'COMPLETED', '2026-10-23'),
-      ('REQ-1059', 'Deodato Arellano', 'Business Permit Clearance', 'New Business', 'APPROVED', '2026-10-24'),
-      ('REQ-1060', 'Roman Basa', 'Barangay Clearance', 'Police Clearance Requirement', 'COMPLETED', '2026-10-24'),
-      ('REQ-1061', 'Josefa Llanes Escoda', 'Certificate of Indigency', 'Financial Assistance', 'PENDING', '2026-10-24'),
-      ('REQ-1062', 'Vicente Lim', 'Barangay Residency', 'Driver License Requirement', 'COMPLETED', '2026-10-25'),
-      ('REQ-1063', 'Jose Abad Santos', 'Barangay Clearance', 'Employment', 'APPROVED', '2026-10-25'),
-      ('REQ-1064', 'Lope K. Santos', 'Certificate of Good Moral', 'School Requirement', 'COMPLETED', '2026-10-25'),
-      ('REQ-1065', 'Amado V. Hernandez', 'Barangay Residency', 'Bank Account Opening', 'PENDING', '2026-10-26'),
-      ('REQ-1066', 'Carlos Bulosan', 'Barangay Clearance', 'Passport Application', 'COMPLETED', '2026-10-26'),
-      ('REQ-1067', 'Paz Marquez Benitez', 'Certificate of Indigency', 'Scholarship Application', 'APPROVED', '2026-10-26'),
-      ('REQ-1068', 'Modesto De Castro', 'Business Permit Clearance', 'Business Renewal', 'COMPLETED', '2026-10-27'),
-      ('REQ-1069', 'Gregoria De Jesus', 'Barangay Clearance', 'Employment', 'PENDING', '2026-10-27'),
-      ('REQ-1070', 'Marina Dizon', 'Certificate of Indigency', 'Medical Assistance', 'COMPLETED', '2026-10-27'),
-      ('REQ-1071', 'Agueda Kahabagan', 'Barangay Residency', 'ID Requirement', 'APPROVED', '2026-10-28'),
-      ('REQ-1072', 'Trinidad Tecson', 'Barangay Clearance', 'Police Clearance Requirement', 'COMPLETED', '2026-10-28'),
-      ('REQ-1073', 'Nazaria Lagos', 'Certificate of Good Moral', 'Employment Requirement', 'PENDING', '2026-10-28'),
-      ('REQ-1074', 'Patrocinio Gamboa', 'Business Permit Clearance', 'New Business', 'COMPLETED', '2026-10-28'),
-      ('REQ-1075', 'Marcelo Del Pilar Jr.', 'Barangay Residency', 'Postal ID Application', 'REJECTED', '2026-10-28'),
-      ('REQ-1076', 'Juan Crisostomo Ibarra', 'Barangay Clearance', 'Construction Permit', 'APPROVED', '2026-10-29'),
-      ('REQ-1077', 'Maria Clara Delos Santos', 'Certificate of Indigency', 'Educational Assistance', 'COMPLETED', '2026-10-29'),
-      ('REQ-1078', 'Padre Damaso', 'Business Permit Clearance', 'Church Facility Permit', 'PENDING', '2026-10-29'),
-      ('REQ-1079', 'Elias Salome', 'Barangay Clearance', 'Employment', 'COMPLETED', '2026-10-29'),
-      ('REQ-1080', 'Sisa Basilio', 'Certificate of Indigency', 'Medical Assistance', 'PENDING', '2026-10-29'),
-      ('REQ-1081', 'Crispin Basilio', 'Barangay Residency', 'School Transfer', 'APPROVED', '2026-10-29'),
-      ('REQ-1082', 'Basilio Santos', 'Certificate of Good Moral', 'Scholarship Application', 'COMPLETED', '2026-10-29'),
-      ('REQ-1083', 'Pilosopo Tasyo', 'Barangay Clearance', 'ID Renewal', 'PENDING', '2026-10-29'),
-      ('REQ-1084', 'Don Tiburcio', 'Business Permit Clearance', 'Clinic Permit', 'COMPLETED', '2026-10-29'),
-      ('REQ-1085', 'Dona Victorina', 'Barangay Clearance', 'Travel Visa Requirement', 'APPROVED', '2026-10-29'),
-      ('REQ-1086', 'Capitan Tiago', 'Business Permit Clearance', 'Business Renewal', 'COMPLETED', '2026-10-29'),
-      ('REQ-1087', 'Linares De Espadana', 'Barangay Residency', 'Bank Account Opening', 'PENDING', '2026-10-29'),
-      ('REQ-1088', 'Sinang Rivera', 'Barangay Clearance', 'Employment', 'COMPLETED', '2026-10-29'),
-      ('REQ-1089', 'Andeng Cruz', 'Certificate of Indigency', 'Burial Assistance', 'PENDING', '2026-10-29'),
-      ('REQ-1090', 'Victoria Reyes', 'Barangay Residency', 'Passport Application', 'APPROVED', '2026-10-29'),
-      ('REQ-1091', 'Iday Santos', 'Barangay Clearance', 'Employment', 'COMPLETED', '2026-10-29'),
-      ('REQ-1092', 'Alfonso Linares', 'Business Permit Clearance', 'New Business', 'PENDING', '2026-10-29'),
-      ('REQ-1093', 'Lucas Gomez', 'Barangay Clearance', 'Police Clearance Requirement', 'COMPLETED', '2026-10-29'),
-      ('REQ-1094', 'Tarsilo Alasigan', 'Certificate of Indigency', 'Financial Assistance', 'PENDING', '2026-10-29'),
-      ('REQ-1095', 'Bruno Alasigan', 'Barangay Residency', 'Driver License Requirement', 'APPROVED', '2026-10-29'),
-      ('REQ-1096', 'Tiya Isabel', 'Barangay Clearance', 'ID Renewal', 'COMPLETED', '2026-10-29'),
-      ('REQ-1097', 'Don Rafael Ibarra', 'Business Permit Clearance', 'Property Permit', 'COMPLETED', '2026-10-29'),
-      ('REQ-1098', 'Padre Salvi', 'Certificate of Good Moral', 'Church Clearance', 'PENDING', '2026-10-29'),
-      ('REQ-1099', 'Padre Sibyla', 'Barangay Residency', 'University Requirement', 'APPROVED', '2026-10-29'),
-      ('REQ-1100', 'Alferez Real', 'Barangay Clearance', 'Government Clearance Requirement', 'COMPLETED', '2026-10-29')
+    // Assumes user_id / resident_id = 1 (Default resident account)
+    const mockList = [];
+    const statuses = ['Pending', 'Approved', 'Ready for Pickup', 'Completed', 'Rejected'];
+    const docTypes = [
+      'Barangay Clearance', 
+      'Certificate of Indigency', 
+      'Barangay Residency', 
+      'Business Permit Clearance', 
+      'Certificate of Good Moral'
+    ];
+    const names = [
+      'Juan Dela Cruz', 'Maria Clara Santos', 'Jose Rizal', 'Andres Bonifacio', 
+      'Apolinario Mabini', 'Emilio Aguinaldo', 'Melchora Aquino', 'Gabriela Silang', 
+      'Juan Luna', 'Marcelo H. Del Pilar', 'Antonio Luna', 'Gregorio Del Pilar'
+    ];
+
+    for (let i = 1; i <= 100; i++) {
+      const refNo = `REQ-2026-${String(i).padStart(4, '0')}`; const name = names[i \% names.length] + ` (${i})`;
+      const doc = docTypes[i % docTypes.length];
+      const status = statuses[i % statuses.length];
+      const purpose = 'Official Requirement';
+      const residentId = 1; // Default existing resident user ID
+
+      mockList.push([
+        refNo,
+        residentId,
+        name,
+        doc,
+        purpose,
+        status,
+        '2026-10-29'
+      ]);
+    }
+
+    // Direct insertion matching standard table schemas
+    const query = `
+      INSERT INTO requests 
+        (reference_no, user_id, resident_name, document_type, purpose, status, created_at) 
+      VALUES ? 
       ON DUPLICATE KEY UPDATE status=VALUES(status);
     `;
 
-    await pool.query(sql);
-
-    // I-check kung pila gyud tanan ka requests ang naa na sa database
-    const [rows] = await pool.query('SELECT COUNT(*) as total FROM requests');
-    console.log(` Successfully seeded database! Current total requests: ${rows[0].total}`);
+    await pool.query(query, [mockList]);
+    console.log(' Successfully inserted 100 mock requests into database!');
 
   } catch (err) {
-    console.error(' Error seeding database:', err.message);
+    console.error(' Seeding note:', err.message);
   }
 }
 
