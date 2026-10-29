@@ -222,36 +222,18 @@
 
         async function loadActivity() {
             const container = document.getElementById('activityCharts');
-            const mockOverview = {
-                month_label: 'October 2026',
-                bookings: { total: 0, residents: 0 },
-                documents: [
-                    { name: 'Barangay Clearance', count: 35 },
-                    { name: 'Certificate of Indigency', count: 25 },
-                    { name: 'Barangay Residency', count: 20 },
-                    { name: 'Business Permit Clearance', count: 12 },
-                    { name: 'Certificate of Good Moral', count: 8 }
-                ]
-            };
-
             try {
-                let overview = await Api.get('admin', '/api/stats/overview');
-                
-                if (!overview || !overview.documents || overview.documents.length === 0 || overview.documents.reduce((a, b) => a + (b.count || 0), 0) < 10) {
-                    overview = mockOverview;
+                const overview = await Api.get('admin', '/api/stats/overview');
+                if (overview && overview.bookings) {
+                    document.getElementById('statBookingsMonth').innerText = overview.bookings.total || 0;
+                    document.getElementById('statBookingsResidents').innerText =
+                        `${overview.bookings.residents || 0} resident${overview.bookings.residents === 1 ? '' : 's'} · ${overview.month_label || 'October 2026'}`;
                 }
-
-                document.getElementById('statBookingsMonth').innerText = overview.bookings.total || 0;
-                document.getElementById('statBookingsResidents').innerText =
-                    `${overview.bookings.residents || 0} resident${overview.bookings.residents === 1 ? '' : 's'} · ${overview.month_label || 'October 2026'}`;
-
                 if (typeof DashboardCharts !== 'undefined' && container) {
                     DashboardCharts.render(container, overview);
                 }
             } catch (err) {
-                if (typeof DashboardCharts !== 'undefined' && container) {
-                    DashboardCharts.render(container, mockOverview);
-                }
+                if (container) container.innerHTML = `<p class="text-xs text-slate-400 p-4">No chart activity loaded.</p>`;
             }
         }
 
@@ -264,6 +246,7 @@
             document.querySelectorAll('main a[href="add-official.html"]').forEach(link => link.classList.add('hidden'));
         }
 
+        // Helper function to build 100 mock requests directly in the client
         function get100MockData() {
             const docTypes = ['Barangay Clearance', 'Certificate of Indigency', 'Barangay Residency', 'Business Permit Clearance', 'Certificate of Good Moral'];
             const statuses = ['Pending', 'Approved', 'Ready for Pickup', 'Completed', 'Rejected'];
@@ -308,10 +291,12 @@
 
             try {
                 stats = await Api.get('admin', '/api/admin/stats');
+                // If API returns empty or invalid requests data, use fallback mock data
                 if (!stats || !stats.requests || !stats.requests.total || stats.requests.total === 0) {
                     stats = get100MockData();
                 }
             } catch (err) {
+                // Network error fallback
                 stats = get100MockData();
             }
 
