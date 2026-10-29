@@ -106,13 +106,7 @@
                     </label>
                     <select id="documentType" onchange="handleDocumentTypeChange()" required
                             class="w-full px-4 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1e3a8a] bg-white text-slate-800 cursor-pointer">
-                        <option value="" disabled selected>Select a document type</option>
-                        <option value="Barangay Clearance">Barangay Clearance</option>
-                        <option value="Certificate of Residency">Certificate of Residency</option>
-                        <option value="Certificate of Indigency">Certificate of Indigency</option>
-                        <option value="Business Permit Clearance">Business Permit Clearance</option>
-                        <option value="Barangay ID">Barangay ID</option>
-                        <option value="Good Moral Certificate">Good Moral Certificate</option>
+                        <option value="" disabled selected>Loading document types...</option>
                     </select>
                 </div>
 
@@ -123,8 +117,9 @@
                         <span>Requirements for <span id="reqDocTitle">this document</span>:</span>
                     </div>
                     <ul id="reqList" class="list-disc list-inside text-xs text-slate-700 space-y-1 pl-1">
-                        <!-- Populated dynamically via JS -->
+                        <!-- Loaded from the document type's requirements -->
                     </ul>
+                    <p id="reqFee" class="text-xs font-bold text-slate-700 mt-2"></p>
                 </div>
 
                 <!-- Purpose Field -->
@@ -149,7 +144,7 @@
                         </div>
                         <div>
                             <p class="text-xs font-bold text-slate-800">Click or drag files here to upload</p>
-                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">PNG, JPG, or PDF files accepted</p>
+                            <p class="text-[10px] text-slate-400 font-medium mt-0.5">PNG, JPG, or PDF files accepted (max 5 MB)</p>
                         </div>
                         <input type="file" id="fileInput" onchange="handleFileSelection(event)" class="hidden" accept="image/*,.pdf" required>
                     </div>
@@ -167,9 +162,11 @@
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 px-6 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-sm transition cursor-pointer">
+                <div id="formAlert" class="hidden text-xs text-center py-2.5 rounded-xl font-semibold"></div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3.5 px-6 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-sm transition cursor-pointer disabled:opacity-60 disabled:cursor-wait">
                     <i class="fa-regular fa-paper-plane text-xs"></i>
-                    <span>Submit Request</span>
+                    <span id="submitLabel">Submit Request</span>
                 </button>
 
             </form>
@@ -177,180 +174,112 @@
 
     </main>
 
+    <script src="api-client.js"></script>
     <script>
         lucide.createIcons();
 
-        // Requirements Data Dictionary
-        const documentRequirements = {
-            "Barangay Clearance": [
-                "1 Valid Government-issued ID (e.g., Passport, Driver's License, UMID)",
-                "Proof of Residency (e.g., Utility bill or Barangay Certificate)",
-                "Community Tax Certificate (Cedula)"
-            ],
-            "Certificate of Residency": [
-                "1 Valid Government-issued ID showing local address",
-                "Proof of continuous residency for at least 6 months"
-            ],
-            "Certificate of Indigency": [
-                "1 Valid Government ID",
-                "Oath or Affidavit of Low Income Status / Endorsement from Social Worker"
-            ],
-            "Business Permit Clearance": [
-                "DTI / SEC Registration Certificate",
-                "Contract of Lease or Land Title",
-                "Mayor's Permit Application form"
-            ],
-            "Barangay ID": [
-                "1 Primary ID or Birth Certificate (PSA)",
-                "1x1 or 2x2 ID photo with white background",
-                "Proof of Billing/Residency"
-            ],
-            "Good Moral Certificate": [
-                "1 Valid Government-issued ID",
-                "Endorsement letter from school, employer, or Barangay Kagawad"
-            ]
-        };
+        const session = Api.requireSession('resident');
+        Api.setupResidentNav();
 
-        let currentBase64File = null;
-        let currentFileName = "";
+        const MAX_FILE_BYTES = 5 * 1024 * 1024;
+        let documentTypes = [];
+        let selectedFile = null;
 
-        // Handle Requirements display on dropdown selection change
-        function handleDocumentTypeChange() {
-            const selectEl = document.getElementById('documentType');
-            const selectedDoc = selectEl.value;
-            const reqBox = document.getElementById('requirementsBox');
-            const reqTitle = document.getElementById('reqDocTitle');
-            const reqList = document.getElementById('reqList');
+        if (session) loadDocumentTypes();
 
-            if (selectedDoc && documentRequirements[selectedDoc]) {
-                reqTitle.innerText = selectedDoc;
-                reqList.innerHTML = documentRequirements[selectedDoc]
-                    .map(item => `<li class="font-medium">${item}</li>`)
-                    .join('');
-                reqBox.classList.remove('hidden');
-            } else {
-                reqBox.classList.add('hidden');
+        async function loadDocumentTypes() {
+            const select = document.getElementById('documentType');
+            try {
+                documentTypes = await Api.get(null, '/api/documents');
+                if (documentTypes.length === 0) {
+                    select.innerHTML = '<option value="" disabled selected>No documents are available yet. Please check back later.</option>';
+                    return;
+                }
+                select.innerHTML = '<option value="" disabled selected>Select a document type</option>' +
+                    documentTypes.map(d => `<option value="${d.doc_type_id}">${Api.escape(d.name)}</option>`).join('');
+            } catch (err) {
+                select.innerHTML = `<option value="" disabled selected>${Api.escape(err.message)}</option>`;
             }
         }
 
-        // Handle File Input Selection
+        // Shows the selected document's requirements (one per line, as entered by the admin) and fee.
+        function handleDocumentTypeChange() {
+            const doc = documentTypes.find(d => String(d.doc_type_id) === document.getElementById('documentType').value);
+            const reqBox = document.getElementById('requirementsBox');
+            if (!doc) {
+                reqBox.classList.add('hidden');
+                return;
+            }
+
+            const requirements = (doc.requirements || '').split(/\r?\n/).map(r => r.trim()).filter(Boolean);
+            document.getElementById('reqDocTitle').innerText = doc.name;
+            document.getElementById('reqList').innerHTML = requirements.length
+                ? requirements.map(item => `<li class="font-medium">${Api.escape(item)}</li>`).join('')
+                : '<li class="font-medium">Please ask the barangay office for the requirements.</li>';
+            document.getElementById('reqFee').innerText = doc.fee > 0 ? `Fee: ₱${doc.fee.toFixed(2)}` : 'Fee: Free';
+            reqBox.classList.remove('hidden');
+        }
+
         function handleFileSelection(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            currentFileName = file.name;
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                currentBase64File = e.target.result;
-                document.getElementById('selectedFileName').innerText = currentFileName;
-                document.getElementById('filePreviewContainer').classList.remove('hidden');
-            };
-
-            reader.readAsDataURL(file);
+            if (file.size > MAX_FILE_BYTES) {
+                showAlert('The file is larger than 5 MB. Please choose a smaller file.', 'bg-red-50 text-red-700');
+                removeSelectedFile();
+                return;
+            }
+            selectedFile = file;
+            document.getElementById('selectedFileName').innerText = file.name;
+            document.getElementById('filePreviewContainer').classList.remove('hidden');
+            document.getElementById('formAlert').classList.add('hidden');
         }
 
         function removeSelectedFile() {
             document.getElementById('fileInput').value = '';
-            currentBase64File = null;
-            currentFileName = "";
+            selectedFile = null;
             document.getElementById('filePreviewContainer').classList.add('hidden');
         }
 
-        // Save Request to localStorage
-        function handleFormSubmit(event) {
+        async function handleFormSubmit(event) {
             event.preventDefault();
-
-            const docType = document.getElementById('documentType').value;
+            const docTypeId = document.getElementById('documentType').value;
             const purpose = document.getElementById('requestPurpose').value.trim();
 
-            if (!docType || !purpose) {
-                alert("Please fill in all required fields.");
+            if (!docTypeId || !purpose) {
+                showAlert('Please fill in all required fields.', 'bg-red-50 text-red-700');
+                return;
+            }
+            if (!selectedFile) {
+                showAlert('Please attach a valid ID or supporting document.', 'bg-red-50 text-red-700');
                 return;
             }
 
-            if (!currentBase64File) {
-                alert("Please attach a valid ID or document image.");
-                return;
-            }
+            const form = new FormData();
+            form.append('doc_type_id', docTypeId);
+            form.append('purpose', purpose);
+            form.append('file', selectedFile);
 
-            const storedRequests = localStorage.getItem('documentRequests');
-            let requests = storedRequests ? JSON.parse(storedRequests) : [];
-
-            // Prevent duplicate REQ-00 REQ-00 formatting bugs
-            const newId = `REQ-00${requests.length + 1}`;
-            const today = new Date().toISOString().split('T')[0];
-
-            // Get active logged in resident name if available
-            const residentUser = JSON.parse(localStorage.getItem('residentUser') || '{}');
-            const residentName = residentUser.name || residentUser.fullName || "Jerome Lonoy";
-
-            const newRequestObj = {
-                id: newId,
-                request_id: newId,
-                resident_name: residentName,
-                residentName: residentName,
-                document_type: docType,
-                documentType: docType,
-                purpose: purpose,
-                date_submitted: today,
-                dateSubmitted: today,
-                status: "Pending",
-                // Direct file properties so manage-requests.html reads it instantly
-                file_url: currentBase64File,
-                fileUrl: currentBase64File,
-                attachment: currentBase64File,
-                files: [
-                    {
-                        name: currentFileName || "Attached_Document.png",
-                        dataUrl: currentBase64File
-                    }
-                ]
-            };
-
-            requests.unshift(newRequestObj);
-            localStorage.setItem('documentRequests', JSON.stringify(requests));
-
-            alert(`Your request (${newId}) for ${docType} has been submitted successfully!`);
-            window.location.href = 'status.html';
-        }
-
-        // Senior Mode Logic
-        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
-
-        function applySeniorMode() {
-            const btnText = document.getElementById('seniorBtnText');
-            const btn = document.getElementById('seniorModeBtn');
-
-            if (seniorModeActive) {
-                document.body.classList.add('senior-mode');
-                if (btnText) btnText.innerText = "Disable Senior Mode";
-                if (btn) {
-                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
-                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
-                }
-            } else {
-                document.body.classList.remove('senior-mode');
-                if (btnText) btnText.innerText = "Senior Mode";
-                if (btn) {
-                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
-                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
-                }
+            setSubmitting(true);
+            try {
+                const data = await Api.request('resident', 'POST', '/api/requests', { form });
+                alert(`Your request (${data.request.reference_no}) for ${data.request.document_type} has been submitted successfully!`);
+                window.location.href = 'status.html';
+            } catch (err) {
+                showAlert(err.message, 'bg-red-50 text-red-700');
+                setSubmitting(false);
             }
         }
 
-        function toggleSeniorMode() {
-            seniorModeActive = !seniorModeActive;
-            localStorage.setItem('senior_mode_active', seniorModeActive);
-            applySeniorMode();
+        function setSubmitting(busy) {
+            document.getElementById('submitBtn').disabled = busy;
+            document.getElementById('submitLabel').innerText = busy ? 'Submitting...' : 'Submit Request';
         }
 
-        function handleLogout() {
-            localStorage.removeItem('residentUser');
-            window.location.href = 'index.html';
+        function showAlert(text, classes) {
+            const box = document.getElementById('formAlert');
+            box.className = `text-xs text-center py-2.5 rounded-xl font-semibold ${classes}`;
+            box.innerText = text;
         }
-
-        applySeniorMode();
     </script>
 </body>
 </html>

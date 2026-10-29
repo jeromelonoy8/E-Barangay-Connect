@@ -115,7 +115,10 @@ router.post('/', requireResident, async (req, res) => {
     if (!schedule.configured) throw conflict(NOT_CONFIGURED);
 
     const body = req.body || {};
-    const purpose = v.str(body, 'purpose', { required: true, max: 255, label: 'Purpose' });
+    // Once the barangay has listed its visit purposes, only those are accepted.
+    const purpose = schedule.purposes.length
+        ? v.oneOf(body, 'purpose', schedule.purposes, { required: true, label: 'Purpose' })
+        : v.str(body, 'purpose', { required: true, max: 255, label: 'Purpose' });
     const date = v.date(body, 'date', { required: true, label: 'Date' });
     const slot = v.oneOf(body, 'time_slot', schedule.timeSlots, { required: true, label: 'Time slot' });
     assertBookableDate(schedule, date);

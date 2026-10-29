@@ -129,8 +129,8 @@
                 <input type="file" id="profilePicInput" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
 
                 <div class="text-center sm:text-left flex-1">
-                    <h2 id="displayName" class="text-xl font-bold text-gray-900">Jerome Yu Lonoy</h2>
-                    <span class="inline-block px-3 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mt-1">Resident ID: #RES-8821</span>
+                    <h2 id="displayName" class="text-xl font-bold text-gray-900"></h2>
+                    <span class="inline-block px-3 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full mt-1" id="residentIdBadge"></span>
                     
                     <div class="mt-3 flex items-center justify-center sm:justify-start space-x-3">
                         <button type="button" onclick="document.getElementById('profilePicInput').click()" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition cursor-pointer">
@@ -150,13 +150,13 @@
                     <!-- Full Name -->
                     <div>
                         <label for="fullName" class="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
-                        <input type="text" id="fullName" value="Jerome Yu Lonoy" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                        <input type="text" id="fullName" required maxlength="100" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
                     </div>
 
                     <!-- Email Address -->
                     <div>
                         <label for="email" class="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
-                        <input type="email" id="email" value="jerome.lonoy@example.com" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                        <input type="email" id="email" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
                     </div>
                 </div>
 
@@ -164,20 +164,20 @@
                     <!-- Contact Number -->
                     <div>
                         <label for="contactNo" class="block text-sm font-semibold text-gray-700 mb-1.5">Contact Number</label>
-                        <input type="text" id="contactNo" value="09123456789" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                        <input type="text" id="contactNo" required placeholder="09XXXXXXXXX" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
                     </div>
 
                     <!-- Date of Birth -->
                     <div>
                         <label for="dob" class="block text-sm font-semibold text-gray-700 mb-1.5">Date of Birth</label>
-                        <input type="date" id="dob" value="1995-05-15" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                        <input type="date" id="dob" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
                     </div>
                 </div>
 
                 <!-- Complete Address -->
                 <div>
                     <label for="address" class="block text-sm font-semibold text-gray-700 mb-1.5">Barangay Address</label>
-                    <input type="text" id="address" value="Zone 3, Barangay Proper, City" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    <input type="text" id="address" maxlength="255" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
                 </div>
 
                 <!-- Action Buttons -->
@@ -185,7 +185,7 @@
                     <button type="button" onclick="window.location.href='dashboard.html'" class="px-5 py-2.5 rounded-lg border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-all cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" class="px-6 py-2.5 rounded-lg bg-[#1e3a8a] text-white font-semibold text-sm hover:bg-blue-800 transition-all shadow cursor-pointer">
+                    <button type="submit" id="saveProfileBtn" class="px-6 py-2.5 rounded-lg bg-[#1e3a8a] text-white font-semibold text-sm hover:bg-blue-800 transition-all shadow cursor-pointer">
                         Save Changes
                     </button>
                 </div>
@@ -193,161 +193,155 @@
             </form>
         </div>
 
+        <!-- Change Password Card -->
+        <div class="profile-card bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-6 transition-all">
+            <h2 class="text-lg font-bold text-gray-900 mb-1">Change Password</h2>
+            <p class="text-gray-500 text-xs mb-5">Use at least 8 characters.</p>
+            <form id="passwordForm" onsubmit="handlePasswordChange(event)" class="space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                        <label for="currentPassword" class="block text-sm font-semibold text-gray-700 mb-1.5">Current Password</label>
+                        <input type="password" id="currentPassword" required autocomplete="current-password" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+                    <div>
+                        <label for="newPassword" class="block text-sm font-semibold text-gray-700 mb-1.5">New Password</label>
+                        <input type="password" id="newPassword" required minlength="8" autocomplete="new-password" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+                    <div>
+                        <label for="confirmNewPassword" class="block text-sm font-semibold text-gray-700 mb-1.5">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" required minlength="8" autocomplete="new-password" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-900 focus:border-blue-900 outline-none transition bg-white text-gray-800">
+                    </div>
+                </div>
+                <div class="flex justify-end pt-4 border-t border-slate-100">
+                    <button type="submit" class="px-6 py-2.5 rounded-lg bg-[#1e3a8a] text-white font-semibold text-sm hover:bg-blue-800 transition-all shadow cursor-pointer">
+                        Update Password
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </main>
 
+    <script src="api-client.js"></script>
     <script>
         lucide.createIcons();
 
-        let currentProfilePhotoBase64 = null;
+        const session = Api.requireSession('resident');
+        Api.setupResidentNav();
 
-        // Display user photo if existing
-        function renderProfilePhoto(base64Image) {
+        const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+
+        if (session) {
+            renderUser(session.user);
+            loadProfile();
+        }
+
+        async function loadProfile() {
+            try {
+                const user = await Api.get('resident', '/api/profile');
+                Api.saveSession('resident', null, user);
+                renderUser(user);
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function renderUser(user) {
+            if (!user) return;
+            document.getElementById('displayName').innerText = user.full_name || user.username;
+            document.getElementById('residentIdBadge').innerText = `Resident ID: #RES-${String(user.id).padStart(4, '0')}`;
+            document.getElementById('fullName').value = user.full_name || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('contactNo').value = user.phone_number || '';
+            document.getElementById('dob').value = user.birth_date || '';
+            document.getElementById('address').value = user.address || '';
+            renderProfilePhoto(user.profile_pic);
+        }
+
+        function renderProfilePhoto(dataUrl) {
             const preview = document.getElementById('profileImagePreview');
             const defaultIcon = document.getElementById('defaultAvatarIcon');
             const removeBtn = document.getElementById('removePhotoBtn');
+            preview.src = dataUrl || '';
+            preview.classList.toggle('hidden', !dataUrl);
+            defaultIcon.classList.toggle('hidden', Boolean(dataUrl));
+            removeBtn.classList.toggle('hidden', !dataUrl);
+        }
 
-            if (base64Image) {
-                preview.src = base64Image;
-                preview.classList.remove('hidden');
-                defaultIcon.classList.add('hidden');
-                removeBtn.classList.remove('hidden');
-            } else {
-                preview.src = "";
-                preview.classList.add('hidden');
-                defaultIcon.classList.remove('hidden');
-                removeBtn.classList.add('hidden');
+        // The photo is saved as soon as it is chosen.
+        async function handleImageUpload(input) {
+            const file = input.files && input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (file.size > MAX_PHOTO_BYTES) {
+                alert('The photo is larger than 2 MB. Please choose a smaller image.');
+                return;
+            }
+            const form = new FormData();
+            form.append('photo', file);
+            try {
+                const data = await Api.request('resident', 'PUT', '/api/profile/photo', { form });
+                Api.saveSession('resident', null, data.user);
+                renderProfilePhoto(data.user.profile_pic);
+            } catch (err) {
+                alert(err.message);
             }
         }
 
-        // Handle image selection & conversion to Base64 string
-        function handleImageUpload(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    currentProfilePhotoBase64 = e.target.result;
-                    renderProfilePhoto(currentProfilePhotoBase64);
-                    
-                    // Immediately sync image to backup storage keys
-                    localStorage.setItem('profilePic', currentProfilePhotoBase64);
-                    localStorage.setItem('userProfilePic', currentProfilePhotoBase64);
-                };
-                reader.readAsDataURL(input.files[0]);
+        async function removeProfilePhoto() {
+            if (!confirm('Remove your profile photo?')) return;
+            try {
+                const data = await Api.request('resident', 'DELETE', '/api/profile/photo');
+                Api.saveSession('resident', null, data.user);
+                renderProfilePhoto(null);
+            } catch (err) {
+                alert(err.message);
             }
         }
 
-        // Remove uploaded photo
-        function removeProfilePhoto() {
-            currentProfilePhotoBase64 = null;
-            document.getElementById('profilePicInput').value = "";
-            renderProfilePhoto(null);
-            
-            // Clear backup picture storage
-            localStorage.removeItem('profilePic');
-            localStorage.removeItem('userProfilePic');
-            localStorage.removeItem('residentProfilePic');
-            localStorage.removeItem('profileImage');
-        }
-
-        // Load resident user info from localStorage on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            // 1. Check standalone keys first for photo persistence
-            let savedPhoto = localStorage.getItem('profilePic') || 
-                             localStorage.getItem('userProfilePic') || 
-                             localStorage.getItem('residentProfilePic') || 
-                             localStorage.getItem('profileImage');
-
-            const storedUser = localStorage.getItem('residentUser') || localStorage.getItem('user');
-            if (storedUser) {
-                try {
-                    const user = JSON.parse(storedUser);
-                    if (user.name) {
-                        document.getElementById('fullName').value = user.name;
-                        document.getElementById('displayName').innerText = user.name;
-                    }
-                    if (user.email) document.getElementById('email').value = user.email;
-                    if (user.contact) document.getElementById('contactNo').value = user.contact;
-                    if (user.address) document.getElementById('address').value = user.address;
-                    
-                    if (!savedPhoto && (user.photo || user.profilePic || user.profileImage || user.avatar)) {
-                        savedPhoto = user.photo || user.profilePic || user.profileImage || user.avatar;
-                    }
-                } catch (e) {
-                    console.error("Could not parse user data from localStorage", e);
-                }
-            }
-
-            if (savedPhoto) {
-                currentProfilePhotoBase64 = savedPhoto;
-                renderProfilePhoto(savedPhoto);
-                localStorage.setItem('profilePic', savedPhoto);
-            }
-        });
-
-        // Senior Mode Logic
-        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
-
-        function applySeniorMode() {
-            const btnText = document.getElementById('seniorBtnText');
-            const btn = document.getElementById('seniorModeBtn');
-
-            if (seniorModeActive) {
-                document.body.classList.add('senior-mode');
-                if (btnText) btnText.innerText = "Disable Senior Mode";
-                if (btn) {
-                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
-                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
-                }
-            } else {
-                document.body.classList.remove('senior-mode');
-                if (btnText) btnText.innerText = "Senior Mode";
-                if (btn) {
-                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
-                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
-                }
-            }
-        }
-
-        function toggleSeniorMode() {
-            seniorModeActive = !seniorModeActive;
-            localStorage.setItem('senior_mode_active', seniorModeActive);
-            applySeniorMode();
-        }
-
-        function handleProfileSave(e) {
+        async function handleProfileSave(e) {
             e.preventDefault();
-            const fullName = document.getElementById('fullName').value;
-            const email = document.getElementById('email').value;
-            const contact = document.getElementById('contactNo').value;
-            const address = document.getElementById('address').value;
-
-            // Save updated information + photo to localStorage under multiple key formats
-            const updatedUser = { 
-                name: fullName, 
-                email: email, 
-                contact: contact, 
-                address: address,
-                photo: currentProfilePhotoBase64,
-                profilePic: currentProfilePhotoBase64
+            const changes = {
+                full_name: document.getElementById('fullName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone_number: document.getElementById('contactNo').value.trim(),
+                address: document.getElementById('address').value.trim(),
+                birth_date: document.getElementById('dob').value
             };
-            
-            localStorage.setItem('residentUser', JSON.stringify(updatedUser));
-            
-            if (currentProfilePhotoBase64) {
-                localStorage.setItem('profilePic', currentProfilePhotoBase64);
-                localStorage.setItem('userProfilePic', currentProfilePhotoBase64);
+            // Blank optional fields are left unchanged.
+            Object.keys(changes).forEach((key) => { if (!changes[key]) delete changes[key]; });
+
+            const saveBtn = document.getElementById('saveProfileBtn');
+            saveBtn.disabled = true;
+            try {
+                const data = await Api.request('resident', 'PUT', '/api/profile', { json: changes });
+                Api.saveSession('resident', null, data.user);
+                renderUser(data.user);
+                alert('Profile updated successfully!');
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                saveBtn.disabled = false;
             }
-
-            document.getElementById('displayName').innerText = fullName;
-            alert('Profile updated successfully!');
         }
 
-        function handleLogout() {
-            localStorage.removeItem('residentUser');
-            window.location.href = 'index.html';
+        async function handlePasswordChange(e) {
+            e.preventDefault();
+            const newPassword = document.getElementById('newPassword').value;
+            if (newPassword !== document.getElementById('confirmNewPassword').value) {
+                alert('The new passwords do not match.');
+                return;
+            }
+            try {
+                await Api.request('resident', 'PUT', '/api/profile/password', {
+                    json: { current_password: document.getElementById('currentPassword').value, new_password: newPassword }
+                });
+                document.getElementById('passwordForm').reset();
+                alert('Password changed successfully!');
+            } catch (err) {
+                alert(err.message);
+            }
         }
-
-        // Initialize Senior Mode state
-        applySeniorMode();
     </script>
 </body>
 </html>

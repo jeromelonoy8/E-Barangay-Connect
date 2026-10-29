@@ -44,7 +44,7 @@
                 <!-- Profile Link & Button -->
                 <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800/80 pl-4">
                     <div id="navAvatarContainer" class="w-6 h-6 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center text-[10px] font-bold overflow-hidden shrink-0">
-                        <span id="navAvatarInitial">A</span>
+                        <span id="navAvatarInitial"></span>
                     </div>
                     <span id="navProfileName">Profile</span>
                 </button>
@@ -123,7 +123,7 @@
             <div class="space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-base font-bold text-slate-900">Registered Officials</h2>
-                    <span id="officialsCountBadge" class="bg-blue-100 text-[#1e3a8a] text-[11px] font-bold px-2 py-0.5 rounded-full">1</span>
+                    <span id="officialsCountBadge" class="bg-blue-100 text-[#1e3a8a] text-[11px] font-bold px-2 py-0.5 rounded-full"></span>
                 </div>
                 
                 <p class="text-xs text-slate-400">Manage registered barangay personnel accounts and authorization rights.</p>
@@ -147,16 +147,14 @@
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
-                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0">
-                            A
-                        </div>
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0"></div>
                         <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
-                        <p id="modalProfileRole" class="text-[11px] text-blue-200">System Admin</p>
+                        <p id="modalProfileRole" class="text-[11px] text-blue-200"></p>
                     </div>
                 </div>
                 <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
@@ -233,72 +231,47 @@
         </div>
     </div>
 
+    <script src="api-client.js"></script>
     <script>
-        if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
-            window.location.replace('admin.html');
-        }
+        const session = Api.requireSession('admin');
 
         lucide.createIcons();
 
-        document.addEventListener('DOMContentLoaded', () => {
+        if (session) {
+            Api.setupAdminNav({ onProfileUpdated: loadOfficialsData });
+            hideAdminOnlyLinks();
             loadDashboardData();
             loadOfficialsData();
-            setupNavbarProfile();
-        });
-
-        function getActiveAdmin() {
-            let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            
-            // Check stored officials registry if logging in as registered official
-            if (currentAdmin.username && currentAdmin.username !== 'admin') {
-                const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const found = storedOfficials.find(o => o.username === currentAdmin.username);
-                if (found) {
-                    currentAdmin = { ...found, ...currentAdmin, profilePic: found.profilePic || currentAdmin.profilePic || '' };
-                }
-            } else if (!currentAdmin.username || currentAdmin.username === 'admin') {
-                // Fallback to saved master admin details
-                const savedMaster = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-                currentAdmin = {
-                    name: savedMaster.name || currentAdmin.name || 'Admin Master',
-                    role: savedMaster.role || currentAdmin.role || 'System Admin',
-                    username: 'admin',
-                    email: savedMaster.email || currentAdmin.email || 'official@barangay.gov.ph',
-                    phone: savedMaster.phone || currentAdmin.phone || '09123456789',
-                    profilePic: savedMaster.profilePic || currentAdmin.profilePic || ''
-                };
-            }
-            return currentAdmin;
         }
 
-        function setupNavbarProfile() {
-            const currentAdmin = getActiveAdmin();
-            const navName = document.getElementById('navProfileName');
-            const navAvatarContainer = document.getElementById('navAvatarContainer');
-
-            if (currentAdmin.name && navName) {
-                navName.innerText = currentAdmin.name;
-            }
-
-            if (currentAdmin.profilePic) {
-                navAvatarContainer.innerHTML = `<img src="${currentAdmin.profilePic}" class="w-full h-full object-cover rounded-full">`;
-            } else if (currentAdmin.name) {
-                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">${currentAdmin.name.charAt(0).toUpperCase()}</span>`;
-            }
+        function isAdmin() {
+            return (Api.session('admin').user || {}).role === 'admin';
         }
 
-        function loadDashboardData() {
-            const storedData = localStorage.getItem('documentRequests');
-            const requests = storedData ? JSON.parse(storedData) : [];
+        // Only full admins can register officials; other officials don't see those buttons.
+        function hideAdminOnlyLinks() {
+            if (isAdmin()) return;
+            document.querySelectorAll('main a[href="add-official.html"]').forEach(link => link.classList.add('hidden'));
+        }
 
-            document.getElementById('statTotalRequests').innerText = requests.length;
-            document.getElementById('statPendingRequests').innerText = requests.filter(r => (r.status || 'Pending') === 'Pending').length;
-            document.getElementById('statApprovedRequests').innerText = requests.filter(r => r.status === 'Approved' || r.status === 'Ready').length;
-            document.getElementById('statRejectedRequests').innerText = requests.filter(r => r.status === 'Rejected').length;
-
+        async function loadDashboardData() {
             const recentContainer = document.getElementById('recentRequestsContainer');
+            let stats;
+            try {
+                stats = await Api.get('admin', '/api/admin/stats');
+            } catch (err) {
+                recentContainer.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+                return;
+            }
 
-            if (requests.length === 0) {
+            const byStatus = stats.requests.by_status;
+            document.getElementById('statTotalRequests').innerText = stats.requests.total;
+            document.getElementById('statPendingRequests').innerText = byStatus['Pending'] || 0;
+            document.getElementById('statApprovedRequests').innerText =
+                (byStatus['Approved'] || 0) + (byStatus['Ready for Pickup'] || 0) + (byStatus['Completed'] || 0);
+            document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || 0;
+
+            if (stats.recent_requests.length === 0) {
                 recentContainer.innerHTML = `
                     <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
                         <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
@@ -308,244 +281,72 @@
                 return;
             }
 
-            recentContainer.innerHTML = requests.slice(0, 4).map((req, index) => {
-                const reqId = req.id || `REQ-00${index + 1}`;
-                const residentName = req.residentName || req.fullName || 'Resident User';
-                const docName = req.documentType || req.documentName || 'Barangay Document';
-                const date = req.dateSubmitted || '2026-09-23';
-                const status = req.status || 'Pending';
+            recentContainer.innerHTML = stats.recent_requests.map(req => `
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-[10px] font-bold text-slate-400 w-16">${Api.escape(req.reference_no)}</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name)}</h4>
+                            <p class="text-[10px] text-slate-400">${Api.escape(req.document_type)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at))}</span>
+                        <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                let badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
-                if (status === 'Approved' || status === 'Ready') badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                if (status === 'Rejected') badgeStyle = 'bg-red-100 text-red-800 border-red-200';
+        async function loadOfficialsData() {
+            const container = document.getElementById('officialsListContainer');
+            let officials;
+            try {
+                officials = await Api.get('admin', '/api/officials');
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+                return;
+            }
+
+            const me = Api.session('admin').user || {};
+            document.getElementById('officialsCountBadge').innerText = officials.length;
+            container.innerHTML = officials.map(official => {
+                const name = official.full_name || official.username;
+                const avatar = official.profile_pic
+                    ? `<img src="${Api.escape(official.profile_pic)}" class="w-8 h-8 rounded-full object-cover">`
+                    : `<div class="w-8 h-8 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-xs">${Api.escape(Api.initials(name))}</div>`;
+                const canDelete = isAdmin() && official.id !== me.id;
 
                 return `
-                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
-                        <div class="flex items-center space-x-4">
-                            <span class="text-[10px] font-bold text-slate-400 w-14">${reqId}</span>
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 ${official.is_active ? '' : 'opacity-60'}">
+                        <div class="flex items-center space-x-3">
+                            ${avatar}
                             <div>
-                                <h4 class="font-bold text-slate-900">${residentName}</h4>
-                                <p class="text-[10px] text-slate-400">${docName}</p>
+                                <h4 class="text-xs font-bold text-slate-900">${Api.escape(name)}${official.is_active ? '' : ' <span class="text-[10px] font-medium text-slate-400">(inactive)</span>'}</h4>
+                                <p class="text-[10px] text-slate-400 font-medium">${Api.escape(Api.staffTitle(official))}</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-4">
-                            <span class="text-slate-400 font-medium text-[11px]">${date}</span>
-                            <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${badgeStyle}">${status}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[10px] font-medium text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md">@${Api.escape(official.username)}</span>
+                            ${canDelete ? `
+                                <button onclick="deleteOfficialAccount(${official.id}, '${Api.escape(name).replace(/'/g, '&#39;')}')" title="Delete Official Account" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function loadOfficialsData() {
-            const container = document.getElementById('officialsListContainer');
-            const countBadge = document.getElementById('officialsCountBadge');
-            const storedOfficials = localStorage.getItem('barangayOfficials');
-            const extraOfficials = storedOfficials ? JSON.parse(storedOfficials) : [];
-            const masterAdmin = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-
-            const masterPic = masterAdmin.profilePic 
-                ? `<img src="${masterAdmin.profilePic}" class="w-8 h-8 rounded-full object-cover">`
-                : `<div class="w-8 h-8 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-xs">A</div>`;
-
-            let html = `
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <div class="flex items-center space-x-3">
-                        ${masterPic}
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-900">${masterAdmin.name || 'Admin Master'}</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">System Admin</p>
-                        </div>
-                    </div>
-                    <span class="text-[10px] font-medium text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md">@admin</span>
-                </div>
-            `;
-
-            extraOfficials.forEach((official, index) => {
-                const initial = (official.name || 'O').charAt(0).toUpperCase();
-                const username = official.username || `official${index + 1}`;
-                const avatar = official.profilePic ? `<img src="${official.profilePic}" class="w-8 h-8 rounded-full object-cover">` : `<div class="w-8 h-8 rounded-full bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs">${initial}</div>`;
-
-                html += `
-                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <div class="flex items-center space-x-3">
-                            ${avatar}
-                            <div>
-                                <h4 class="text-xs font-bold text-slate-900">${official.name}</h4>
-                                <p class="text-[10px] text-slate-400 font-medium">${official.role || 'Barangay Official'}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[10px] font-medium text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded-md">@${username}</span>
-                            <button onclick="deleteOfficialAccount(${index})" title="Delete Official Account" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-            countBadge.innerText = 1 + extraOfficials.length;
-        }
-
-        function deleteOfficialAccount(index) {
-            const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-            const targetAccount = storedOfficials[index];
-
-            if (!targetAccount) return;
-
-            if (confirm(`Are you sure you want to delete the official account for "${targetAccount.name}"? This action cannot be undone.`)) {
-                storedOfficials.splice(index, 1);
-                localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
+        async function deleteOfficialAccount(id, name) {
+            if (!confirm(`Are you sure you want to delete the official account for "${name}"? This action cannot be undone.`)) return;
+            try {
+                await Api.request('admin', 'DELETE', `/api/officials/${id}`);
                 loadOfficialsData();
+            } catch (err) {
+                alert(err.message);
             }
-        }
-
-        /* --- Profile Modal, Avatar Upload & Password Functions --- */
-        function openProfileModal() {
-            const currentAdmin = getActiveAdmin();
-            
-            document.getElementById('modalProfileName').innerText = currentAdmin.name || 'Admin User';
-            document.getElementById('modalProfileRole').innerText = currentAdmin.role || 'Barangay Official';
-            document.getElementById('profileUsername').value = `@${currentAdmin.username || 'admin'}`;
-            document.getElementById('profileEmail').value = currentAdmin.email || '';
-            document.getElementById('profilePhone').value = currentAdmin.phone || '';
-
-            const avatarElem = document.getElementById('modalAvatar');
-            if (currentAdmin.profilePic) {
-                avatarElem.innerHTML = `<img src="${currentAdmin.profilePic}" class="w-full h-full object-cover rounded-full">`;
-            } else {
-                avatarElem.innerText = (currentAdmin.name || 'A').charAt(0).toUpperCase();
-            }
-
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-            document.getElementById('modalAlert').classList.add('hidden');
-
-            document.getElementById('profileModal').classList.remove('hidden');
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                document.getElementById('modalAvatar').innerHTML = `<img src="${base64Image}" class="w-full h-full object-cover rounded-full">`;
-
-                let currentAdmin = getActiveAdmin();
-                currentAdmin.profilePic = base64Image;
-                localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-                if (currentAdmin.username === 'admin') {
-                    let masterAdmin = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-                    masterAdmin.profilePic = base64Image;
-                    localStorage.setItem('masterAdminDetails', JSON.stringify(masterAdmin));
-                } else {
-                    let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                    const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
-                    if (idx !== -1) {
-                        storedOfficials[idx].profilePic = base64Image;
-                        localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                    }
-                }
-                setupNavbarProfile();
-                loadOfficialsData();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function handleSaveProfileDetails(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const email = document.getElementById('profileEmail').value.trim();
-            const phone = document.getElementById('profilePhone').value.trim();
-
-            let currentAdmin = getActiveAdmin();
-            currentAdmin.email = email;
-            currentAdmin.phone = phone;
-
-            localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-            if (currentAdmin.username === 'admin') {
-                let masterAdmin = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-                masterAdmin.email = email;
-                masterAdmin.phone = phone;
-                localStorage.setItem('masterAdminDetails', JSON.stringify(masterAdmin));
-            } else {
-                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
-                if (idx !== -1) {
-                    storedOfficials[idx].email = email;
-                    storedOfficials[idx].phone = phone;
-                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                }
-            }
-
-            showModalAlert(alertBox, 'Profile details saved successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-        }
-
-        function handleChangePassword(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const currentPassInput = document.getElementById('currentPassword').value;
-            const newPassInput = document.getElementById('newPassword').value;
-            const confirmPassInput = document.getElementById('confirmPassword').value;
-
-            if (newPassInput !== confirmPassInput) {
-                showModalAlert(alertBox, 'New passwords do not match.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                return;
-            }
-
-            if (newPassInput.length < 4) {
-                showModalAlert(alertBox, 'Password must be at least 4 characters.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                return;
-            }
-
-            const currentAdmin = getActiveAdmin();
-            let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-
-            if (currentAdmin.username === 'admin') {
-                showModalAlert(alertBox, 'Password updated successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1000);
-                return;
-            }
-
-            const officialIndex = storedOfficials.findIndex(acc => acc.username === currentAdmin.username);
-
-            if (officialIndex !== -1) {
-                if (storedOfficials[officialIndex].password !== currentPassInput) {
-                    showModalAlert(alertBox, 'Current password is incorrect.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                    return;
-                }
-
-                storedOfficials[officialIndex].password = newPassInput;
-                localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-
-                showModalAlert(alertBox, 'Password changed successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1200);
-            } else {
-                showModalAlert(alertBox, 'Account not found in registry.', 'bg-rose-100 text-rose-800 border border-rose-300');
-            }
-        }
-
-        function showModalAlert(element, text, classes) {
-            element.className = `text-xs text-center py-2 px-3 rounded-lg font-medium ${classes}`;
-            element.innerText = text;
-            element.classList.remove('hidden');
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('isAdminLoggedIn');
-            sessionStorage.clear();
-            window.location.replace('admin.html');
         }
     </script>
 </body>

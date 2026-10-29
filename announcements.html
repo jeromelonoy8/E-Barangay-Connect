@@ -43,7 +43,7 @@
                 <!-- Profile Link & Button -->
                 <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800/80 pl-4">
                     <div id="navAvatarContainer" class="w-8 h-8 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center text-xs font-bold overflow-hidden shrink-0 border border-white/20">
-                        <span id="navAvatarInitial">A</span>
+                        <span id="navAvatarInitial"></span>
                     </div>
                     <span id="navProfileName">Profile</span>
                 </button>
@@ -81,13 +81,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category *</label>
-                        <select id="announcementCategory" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
-                            <option value="General News">General News</option>
-                            <option value="Emergency Advisory">Emergency Advisory</option>
-                            <option value="Health Notice">Health Notice</option>
-                            <option value="Community Event">Community Event</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Category</label>
+                        <div id="announcementCategoryField">
+                            <!-- A dropdown of the barangay's categories, or a text box when none are set -->
+                        </div>
                     </div>
 
                     <div>
@@ -96,7 +93,9 @@
                             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition"></textarea>
                     </div>
 
-                    <button type="submit" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center space-x-2">
+                    <div id="postAlert" class="hidden text-xs text-center py-2 px-3 rounded-lg font-medium"></div>
+
+                    <button type="submit" id="publishBtn" class="w-full bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center space-x-2 disabled:opacity-60">
                         <i class="fa-solid fa-paper-plane text-xs"></i>
                         <span>Publish Announcement</span>
                     </button>
@@ -117,14 +116,14 @@
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
-                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0">A</div>
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0"></div>
                         <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
-                        <p id="modalProfileRole" class="text-[11px] text-blue-200">System Admin</p>
+                        <p id="modalProfileRole" class="text-[11px] text-blue-200"></p>
                     </div>
                 </div>
                 <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
@@ -197,69 +196,43 @@
         </div>
     </div>
 
+    <script src="api-client.js"></script>
     <script>
-        if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
-            window.location.replace('admin.html');
-        }
+        const session = Api.requireSession('admin');
 
         lucide.createIcons();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            setupNavbarProfile();
+        if (session) {
+            Api.setupAdminNav();
+            loadCategoryField();
             loadAnnouncements();
-        });
-
-        // Helper to retrieve image from any common localStorage property
-        function getAdminProfilePic(admin) {
-            if (!admin) return null;
-
-            // Direct key check on admin object
-            if (admin.profilePic) return admin.profilePic;
-            if (admin.avatar) return admin.avatar;
-            if (admin.image) return admin.image;
-            if (admin.photo) return admin.photo;
-
-            // Check matching entry in barangayOfficials array
-            const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-            const official = storedOfficials.find(o => 
-                (admin.username && o.username === admin.username) || 
-                (admin.name && o.name === admin.name)
-            );
-
-            if (official) {
-                return official.profilePic || official.avatar || official.image || official.photo || null;
-            }
-
-            return null;
         }
 
-        function setupNavbarProfile() {
-            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            const navName = document.getElementById('navProfileName');
-            const navAvatarContainer = document.getElementById('navAvatarContainer');
-
-            if (currentAdmin.name && navName) {
-                navName.innerText = currentAdmin.name;
+        async function loadCategoryField() {
+            const field = document.getElementById('announcementCategoryField');
+            const classes = 'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition';
+            let categories = [];
+            try {
+                categories = (await Api.get(null, '/api/settings')).announcement_categories;
+            } catch (err) {
+                console.error('Could not load categories:', err.message);
             }
-
-            const picUrl = getAdminProfilePic(currentAdmin);
-
-            if (picUrl) {
-                navAvatarContainer.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover rounded-full">`;
-            } else if (currentAdmin.name) {
-                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">${currentAdmin.name.charAt(0).toUpperCase()}</span>`;
-            } else {
-                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">A</span>`;
-            }
+            field.innerHTML = categories.length
+                ? `<select id="announcementCategory" required class="${classes}">
+                       ${categories.map(c => `<option value="${Api.escape(c)}">${Api.escape(c)}</option>`).join('')}
+                   </select>`
+                : `<input type="text" id="announcementCategory" maxlength="50" placeholder="Optional, e.g. Health Notice" class="${classes}">`;
         }
 
-        function loadAnnouncements() {
+        async function loadAnnouncements() {
             const container = document.getElementById('announcementsContainer');
-            const stored = localStorage.getItem('barangayAnnouncements');
-            const list = stored ? JSON.parse(stored) : [
-                { id: 1, title: 'Barangay Clean-Up Drive', category: 'Community Event', body: 'Join us this coming Saturday for the village-wide clean up drive starting at 6:00 AM.', date: '2026-09-20' },
-                { id: 2, title: 'Free Medical Consultation', category: 'Health Notice', body: 'Free health checkups and basic medicines available at the Barangay Health Center this Friday.', date: '2026-09-18' }
-            ];
+            let list;
+            try {
+                list = await Api.get(null, '/api/announcements');
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+                return;
+            }
 
             if (list.length === 0) {
                 container.innerHTML = `
@@ -271,191 +244,59 @@
                 return;
             }
 
-            container.innerHTML = list.map((item, idx) => `
+            container.innerHTML = list.map(item => `
                 <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-2">
                     <div class="flex justify-between items-start">
                         <div>
-                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1e3a8a] border border-blue-100">${item.category}</span>
-                            <h3 class="text-sm font-bold text-slate-900 mt-2">${item.title}</h3>
+                            ${item.category ? `<span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1e3a8a] border border-blue-100">${Api.escape(item.category)}</span>` : ''}
+                            <h3 class="text-sm font-bold text-slate-900 mt-2">${Api.escape(item.title)}</h3>
                         </div>
-                        <button onclick="deleteAnnouncement(${idx})" title="Delete Notice" class="text-rose-400 hover:text-rose-600 p-1 transition">
+                        <button onclick="deleteAnnouncement(${item.announcement_id})" title="Delete Notice" class="text-rose-400 hover:text-rose-600 p-1 transition">
                             <i class="fa-solid fa-trash-can text-xs"></i>
                         </button>
                     </div>
-                    <p class="text-xs text-slate-600 leading-relaxed">${item.body}</p>
-                    <p class="text-[10px] font-medium text-slate-400 pt-2 border-t border-slate-100">Posted on ${item.date || '2026-09-23'}</p>
+                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${Api.escape(item.body)}</p>
+                    <p class="text-[10px] font-medium text-slate-400 pt-2 border-t border-slate-100">
+                        Posted on ${Api.escape(Api.formatDate(item.created_at))}${item.author_name ? ` by ${Api.escape(item.author_name)}` : ''}
+                    </p>
                 </div>
             `).join('');
         }
 
-        function handlePostAnnouncement(event) {
+        async function handlePostAnnouncement(event) {
             event.preventDefault();
-            const title = document.getElementById('announcementTitle').value.trim();
-            const category = document.getElementById('announcementCategory').value;
-            const body = document.getElementById('announcementBody').value.trim();
+            const alertBox = document.getElementById('postAlert');
+            const publishBtn = document.getElementById('publishBtn');
+            const category = document.getElementById('announcementCategory').value.trim();
 
-            const stored = localStorage.getItem('barangayAnnouncements');
-            const list = stored ? JSON.parse(stored) : [];
-
-            list.unshift({ id: Date.now(), title, category, body, date: '2026-09-23' });
-            localStorage.setItem('barangayAnnouncements', JSON.stringify(list));
-
-            document.getElementById('announcementForm').reset();
-            loadAnnouncements();
-        }
-
-        function deleteAnnouncement(index) {
-            const stored = localStorage.getItem('barangayAnnouncements');
-            if (!stored) return;
-            let list = JSON.parse(stored);
-
-            if (confirm('Are you sure you want to delete this announcement?')) {
-                list.splice(index, 1);
-                localStorage.setItem('barangayAnnouncements', JSON.stringify(list));
+            publishBtn.disabled = true;
+            try {
+                await Api.request('admin', 'POST', '/api/announcements', {
+                    json: {
+                        title: document.getElementById('announcementTitle').value.trim(),
+                        body: document.getElementById('announcementBody').value.trim(),
+                        ...(category ? { category } : {})
+                    }
+                });
+                document.getElementById('announcementForm').reset();
+                alertBox.classList.add('hidden');
                 loadAnnouncements();
+            } catch (err) {
+                alertBox.className = 'text-xs text-center py-2 px-3 rounded-lg font-medium bg-rose-100 text-rose-800 border border-rose-300';
+                alertBox.innerText = err.message;
+            } finally {
+                publishBtn.disabled = false;
             }
         }
 
-        /* --- Profile Modal, Avatar Upload & Password Functions --- */
-        function openProfileModal() {
-            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            document.getElementById('modalProfileName').innerText = currentAdmin.name || 'Admin User';
-            document.getElementById('modalProfileRole').innerText = currentAdmin.role || 'Barangay Official';
-            document.getElementById('profileUsername').value = `@${currentAdmin.username || 'admin'}`;
-            document.getElementById('profileEmail').value = currentAdmin.email || '';
-            document.getElementById('profilePhone').value = currentAdmin.phone || '';
-
-            const avatarElem = document.getElementById('modalAvatar');
-            const picUrl = getAdminProfilePic(currentAdmin);
-
-            if (picUrl) {
-                avatarElem.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover rounded-full">`;
-            } else {
-                avatarElem.innerText = (currentAdmin.name || 'A').charAt(0).toUpperCase();
+        async function deleteAnnouncement(id) {
+            if (!confirm('Are you sure you want to delete this announcement?')) return;
+            try {
+                await Api.request('admin', 'DELETE', `/api/announcements/${id}`);
+                loadAnnouncements();
+            } catch (err) {
+                alert(err.message);
             }
-
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-            document.getElementById('modalAlert').classList.add('hidden');
-
-            document.getElementById('profileModal').classList.remove('hidden');
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                
-                // Update avatar in modal
-                document.getElementById('modalAvatar').innerHTML = `<img src="${base64Image}" class="w-full h-full object-cover rounded-full">`;
-
-                // Save across all possible avatar keys for full compatibility
-                let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-                currentAdmin.profilePic = base64Image;
-                currentAdmin.avatar = base64Image;
-                currentAdmin.image = base64Image;
-                localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-                // Sync with officials database
-                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const idx = storedOfficials.findIndex(o => 
-                    (currentAdmin.username && o.username === currentAdmin.username) || 
-                    (currentAdmin.name && o.name === currentAdmin.name)
-                );
-                if (idx !== -1) {
-                    storedOfficials[idx].profilePic = base64Image;
-                    storedOfficials[idx].avatar = base64Image;
-                    storedOfficials[idx].image = base64Image;
-                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                }
-
-                // Refresh navbar icon immediately
-                setupNavbarProfile();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function handleSaveProfileDetails(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const email = document.getElementById('profileEmail').value.trim();
-            const phone = document.getElementById('profilePhone').value.trim();
-
-            let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            currentAdmin.email = email;
-            currentAdmin.phone = phone;
-
-            localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-            if (currentAdmin.username !== 'admin') {
-                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
-                if (idx !== -1) {
-                    storedOfficials[idx].email = email;
-                    storedOfficials[idx].phone = phone;
-                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                }
-            }
-
-            showModalAlert(alertBox, 'Profile details saved successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-        }
-
-        function handleChangePassword(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const currentPassInput = document.getElementById('currentPassword').value;
-            const newPassInput = document.getElementById('newPassword').value;
-            const confirmPassInput = document.getElementById('confirmPassword').value;
-
-            if (newPassInput !== confirmPassInput) {
-                showModalAlert(alertBox, 'New passwords do not match.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                return;
-            }
-
-            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-
-            if (currentAdmin.username === 'admin') {
-                showModalAlert(alertBox, 'Password updated successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1000);
-                return;
-            }
-
-            const officialIndex = storedOfficials.findIndex(acc => acc.username === currentAdmin.username);
-
-            if (officialIndex !== -1) {
-                if (storedOfficials[officialIndex].password !== currentPassInput) {
-                    showModalAlert(alertBox, 'Current password is incorrect.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                    return;
-                }
-
-                storedOfficials[officialIndex].password = newPassInput;
-                localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-
-                showModalAlert(alertBox, 'Password changed successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1200);
-            }
-        }
-
-        function showModalAlert(element, text, classes) {
-            element.className = `text-xs text-center py-2 px-3 rounded-lg font-medium ${classes}`;
-            element.innerText = text;
-            element.classList.remove('hidden');
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('isAdminLoggedIn');
-            localStorage.removeItem('adminUser');
-            sessionStorage.clear();
-            window.location.replace('admin.html');
         }
     </script>
 </body>

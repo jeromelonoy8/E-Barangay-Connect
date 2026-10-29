@@ -111,6 +111,7 @@ Barangay-specific configuration, stored in the database. Every value is empty un
 | `appointment_time_slots` | list of text | `["08:30 AM - 09:30 AM", "01:30 PM - 02:30 PM"]` | Slots residents can book |
 | `appointment_slot_capacity` | number 1–1000 | `10` | Residents per slot |
 | `appointment_open_days` | list of 0–6 | `[1, 2, 3, 4, 5]` (0 = Sunday) | Days the hall accepts appointments |
+| `appointment_purposes` | list of text | `["Document Pickup", "Consultation"]` | When set, residents pick one when booking. When empty, purpose is free text |
 | `announcement_categories` | list of text | `["General News", "Health Notice"]` | When set, announcements must use one. When empty, category is free text |
 | `official_positions` | list of text | `["Barangay Captain", "Kagawad"]` | When set, officials must use one. When empty, position is free text |
 

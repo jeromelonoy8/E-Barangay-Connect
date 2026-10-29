@@ -41,6 +41,7 @@ const DEFINITIONS = {
     appointment_time_slots: { label: 'Appointment time slots', unset: [], validate: textList(24, 50) },
     appointment_slot_capacity: { label: 'Appointment slot capacity', unset: null, validate: wholeNumber(1, 1000) },
     appointment_open_days: { label: 'Appointment open days', unset: [], validate: weekdays },
+    appointment_purposes: { label: 'Appointment purposes', unset: [], validate: textList(30, 100) },
     announcement_categories: { label: 'Announcement categories', unset: [], validate: textList(50, 50) },
     official_positions: { label: 'Official positions', unset: [], validate: textList(50, 100) }
 };
@@ -89,7 +90,8 @@ async function appointmentSchedule() {
     const schedule = {
         timeSlots: s.appointment_time_slots,
         capacity: s.appointment_slot_capacity,
-        openDays: s.appointment_open_days
+        openDays: s.appointment_open_days,
+        purposes: s.appointment_purposes
     };
     schedule.configured = schedule.timeSlots.length > 0 && Boolean(schedule.capacity) && schedule.openDays.length > 0;
     return schedule;

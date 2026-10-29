@@ -56,82 +56,34 @@
         </div>
     </div>
 
+    <script src="api-client.js"></script>
     <script>
-        // Local copies (localhost, Live Server, or opened as a file) talk to the local API on port 5000.
-        // Deployed copies (the pages are hosted on Vercel) talk to the backend hosted on Render.
-        const API_BASE = ['localhost', '127.0.0.1'].includes(location.hostname) || location.protocol === 'file:'
-            ? 'http://localhost:5000'
-            : 'https://e-barangay-connect.onrender.com';
-
         lucide.createIcons();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('isAdminLoggedIn') === 'true') {
-                window.location.replace('admin-dashboard.html');
-            }
-        });
+        // Already logged in: go straight to the admin dashboard.
+        if (Api.session('admin').token) {
+            window.location.replace('admin-dashboard.html');
+        }
 
         async function handleAdminLogin(event) {
             event.preventDefault();
             const alertBox = document.getElementById('adminAlert');
-            const usernameInput = document.getElementById('adminUser').value.trim().toLowerCase();
-            const passwordInput = document.getElementById('adminPassword').value;
 
-            // 1. Check client-side registered officials database first
-            const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-            const localAccount = storedOfficials.find(
-                acc => (acc.username && acc.username.toLowerCase() === usernameInput) || 
-                       (acc.email && acc.email.toLowerCase() === usernameInput)
-            );
-
-            if (localAccount) {
-                if (localAccount.password === passwordInput) {
-                    grantAccess({
-                        name: localAccount.name,
-                        username: localAccount.username,
-                        role: localAccount.role || 'Barangay Official'
-                    });
-                    return;
-                } else {
-                    showAlert(alertBox, 'Invalid credentials. Password incorrect.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                    return;
-                }
-            }
-
-            // 2. Default System Admin Account
-            if ((usernameInput === 'admin' || usernameInput === 'admin@barangay.gov') && passwordInput === 'admin') {
-                grantAccess({ name: 'Admin Master', username: 'admin', role: 'System Admin' });
-                return;
-            }
-
-            // 3. Fallback check to Server API
             try {
-                const response = await fetch(`${API_BASE}/api/auth/admin-login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+                const data = await Api.request(null, 'POST', '/api/auth/admin-login', {
+                    json: {
+                        username: document.getElementById('adminUser').value.trim(),
+                        password: document.getElementById('adminPassword').value
+                    }
                 });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    grantAccess(data.user);
-                } else {
-                    showAlert(alertBox, data.error || 'Invalid credentials.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                }
+                Api.saveSession('admin', data.token, data.user);
+                showAlert(alertBox, 'Access granted! Opening Admin Portal...', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
+                setTimeout(() => {
+                    window.location.replace('admin-dashboard.html');
+                }, 800);
             } catch (err) {
-                showAlert(alertBox, 'Invalid username or password.', 'bg-rose-100 text-rose-800 border border-rose-300');
+                showAlert(alertBox, err.message, 'bg-rose-100 text-rose-800 border border-rose-300');
             }
-        }
-
-        function grantAccess(userData) {
-            const alertBox = document.getElementById('adminAlert');
-            localStorage.setItem('isAdminLoggedIn', 'true');
-            localStorage.setItem('adminUser', JSON.stringify(userData));
-            showAlert(alertBox, 'Access granted! Opening Admin Portal...', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-            setTimeout(() => {
-                window.location.replace('admin-dashboard.html');
-            }, 800);
         }
 
         function showAlert(element, text, classes) {

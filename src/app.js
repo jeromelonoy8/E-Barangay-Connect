@@ -34,16 +34,19 @@ app.use('/api', (req, res) => {
 
 // ---------------- Frontend pages ----------------
 
-// Only the HTML/CSS/image files in the project root are public. Server code, SQL files,
-// package files and anything in subfolders are never served.
+// Only the HTML/CSS/image files in the project root, plus the pages' shared script, are public.
+// Server code, package files and anything in subfolders are never served.
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_EXTENSIONS = new Set(['.html', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico']);
+const PUBLIC_SCRIPTS = new Set(['/api-client.js']);
 const serveStatic = express.static(ROOT, { index: 'index.html', dotfiles: 'ignore' });
 
 app.use((req, res, next) => {
     const isRootFile = /^\/[^/]*$/.test(req.path);
     const ext = path.extname(req.path).toLowerCase();
-    if (isRootFile && (req.path === '/' || PUBLIC_EXTENSIONS.has(ext))) return serveStatic(req, res, next);
+    if (isRootFile && (req.path === '/' || PUBLIC_EXTENSIONS.has(ext) || PUBLIC_SCRIPTS.has(req.path))) {
+        return serveStatic(req, res, next);
+    }
     next();
 });
 

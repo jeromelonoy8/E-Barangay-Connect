@@ -44,7 +44,7 @@
                 <!-- Profile Link & Button -->
                 <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800 pl-4">
                     <div id="navAvatarContainer" class="w-6 h-6 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
-                        <span id="navAvatarInitial">A</span>
+                        <span id="navAvatarInitial"></span>
                     </div>
                     <span id="navProfileName">Profile</span>
                 </button>
@@ -82,7 +82,10 @@
                     <option value="All">All Statuses</option>
                     <option value="Pending">Pending</option>
                     <option value="Approved">Approved</option>
+                    <option value="Ready for Pickup">Ready for Pickup</option>
+                    <option value="Completed">Completed</option>
                     <option value="Rejected">Rejected</option>
+                    <option value="Cancelled">Cancelled</option>
                 </select>
             </div>
         </div>
@@ -102,7 +105,7 @@
                         </tr>
                     </thead>
                     <tbody id="requestsTableBody" class="divide-y divide-slate-100 text-xs">
-                        <!-- Requests dynamically render here -->
+                        <!-- Loaded from the API -->
                     </tbody>
                 </table>
             </div>
@@ -111,17 +114,17 @@
 
     <!-- Request Details Modal -->
     <div id="requestDetailsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
-            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center shrink-0">
                 <h3 class="font-bold text-sm">Request Details</h3>
                 <button onclick="closeDetailsModal()" class="text-blue-200 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div class="p-6 space-y-4 text-xs" id="detailsModalBody">
-                <!-- Details dynamically loaded -->
+            <div class="p-6 space-y-4 text-xs overflow-y-auto" id="detailsModalBody">
+                <!-- Loaded from the API -->
             </div>
-            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2" id="detailsModalActions">
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end space-x-2 shrink-0" id="detailsModalActions">
                 <!-- Dynamic Action Buttons -->
             </div>
         </div>
@@ -133,14 +136,14 @@
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
-                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/20 shadow-sm">A</div>
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/20 shadow-sm"></div>
                         <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
-                        <p id="modalProfileRole" class="text-xs text-blue-200">System Admin</p>
+                        <p id="modalProfileRole" class="text-xs text-blue-200"></p>
                     </div>
                 </div>
                 <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
@@ -213,81 +216,57 @@
         </div>
     </div>
 
+    <script src="api-client.js"></script>
     <script>
-        if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
-            window.location.replace('admin.html');
-        }
+        const session = Api.requireSession('admin');
 
         lucide.createIcons();
 
-        let allRequests = [];
+        // The next step offered for each status.
+        const NEXT_STEPS = {
+            'Pending': [
+                { status: 'Approved', label: 'Approve', classes: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200', solid: 'bg-emerald-600 hover:bg-emerald-700' },
+                { status: 'Rejected', label: 'Reject', classes: 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200', solid: 'bg-rose-600 hover:bg-rose-700' }
+            ],
+            'Approved': [
+                { status: 'Ready for Pickup', label: 'Mark Ready for Pickup', classes: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200', solid: 'bg-blue-600 hover:bg-blue-700' }
+            ],
+            'Ready for Pickup': [
+                { status: 'Completed', label: 'Mark Released', classes: 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300', solid: 'bg-slate-700 hover:bg-slate-800' }
+            ]
+        };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            setupNavbarProfile();
+        let searchTimer = null;
+
+        if (session) {
+            Api.setupAdminNav();
             loadRequestsTable();
-        });
-
-        function getActiveAdmin() {
-            let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            
-            if (currentAdmin.username && currentAdmin.username !== 'admin') {
-                const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const found = storedOfficials.find(o => o.username === currentAdmin.username);
-                if (found) {
-                    currentAdmin = { ...found, ...currentAdmin, profilePic: found.profilePic || currentAdmin.profilePic || '' };
-                }
-            } else if (!currentAdmin.username || currentAdmin.username === 'admin') {
-                const savedMaster = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-                currentAdmin = {
-                    name: savedMaster.name || currentAdmin.name || 'Admin Master',
-                    role: savedMaster.role || currentAdmin.role || 'System Admin',
-                    username: 'admin',
-                    email: savedMaster.email || currentAdmin.email || 'official@barangay.gov.ph',
-                    phone: savedMaster.phone || currentAdmin.phone || '09123456789',
-                    profilePic: savedMaster.profilePic || currentAdmin.profilePic || ''
-                };
-            }
-            return currentAdmin;
-        }
-
-        function setupNavbarProfile() {
-            const currentAdmin = getActiveAdmin();
-            const navName = document.getElementById('navProfileName');
-            const navAvatarContainer = document.getElementById('navAvatarContainer');
-
-            if (currentAdmin.name && navName) {
-                navName.innerText = currentAdmin.name;
-            }
-
-            if (currentAdmin.profilePic) {
-                navAvatarContainer.innerHTML = `<img src="${currentAdmin.profilePic}" class="w-full h-full object-cover rounded-full">`;
-            } else if (currentAdmin.name) {
-                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">${currentAdmin.name.charAt(0).toUpperCase()}</span>`;
-            }
         }
 
         async function loadRequestsTable() {
+            const tbody = document.getElementById('requestsTableBody');
+            const params = new URLSearchParams();
+            const search = document.getElementById('searchInput').value.trim();
+            const status = document.getElementById('statusFilter').value;
+            if (search) params.set('search', search);
+            if (status !== 'All') params.set('status', status);
+
             try {
-                const res = await fetch('/api/requests');
-                if (res.ok) {
-                    allRequests = await res.json();
-                    renderRequests(allRequests);
-                } else {
-                    const stored = localStorage.getItem('documentRequests');
-                    allRequests = stored ? JSON.parse(stored) : [];
-                    renderRequests(allRequests);
-                }
+                renderRequests(await Api.get('admin', `/api/requests?${params}`));
             } catch (err) {
-                console.error('API Fetch failed, using localStorage fallback:', err);
-                const stored = localStorage.getItem('documentRequests');
-                allRequests = stored ? JSON.parse(stored) : [];
-                renderRequests(allRequests);
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-600">${Api.escape(err.message)}</td></tr>`;
             }
         }
 
-        function renderRequests(requestsList) {
+        // Searching waits until the official stops typing for a moment.
+        function filterRequests() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadRequestsTable, 300);
+        }
+
+        function renderRequests(requests) {
             const tbody = document.getElementById('requestsTableBody');
-            if (!requestsList || requestsList.length === 0) {
+            if (requests.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" class="text-center py-12 text-slate-400">
@@ -299,328 +278,123 @@
                 return;
             }
 
-            tbody.innerHTML = requestsList.map((req, idx) => {
-                const rawId = req.id || req.request_id || (idx + 1);
-                // Fixed ID formatting logic to prevent duplicate "REQ-00" prefixes
-                const reqId = String(rawId).startsWith('REQ-') ? rawId : `REQ-00${rawId}`;
-                const rawDbId = rawId;
-                const name = req.resident_name || req.residentName || req.fullName || 'Resident User';
-                const type = req.document_type || req.documentType || req.documentName || 'Barangay Document';
-                const dateRaw = req.date_submitted || req.dateSubmitted || '2026-09-23';
-                const date = typeof dateRaw === 'string' ? dateRaw.split('T')[0] : new Date(dateRaw).toISOString().split('T')[0];
-                const status = req.status || 'Pending';
-                const fileUrl = req.file_url || req.fileUrl || '';
-
-                let badgeStyle = 'bg-amber-100 text-amber-700 border-amber-200';
-                if (status === 'Approved' || status === 'Ready' || status === 'APPROVED_BOOK_APPOINTMENT' || status === 'READY_FOR_PICKUP') {
-                    badgeStyle = 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                } else if (status === 'Rejected') {
-                    badgeStyle = 'bg-rose-100 text-rose-700 border-rose-200';
-                }
-
-                const viewFileBtn = fileUrl 
-                    ? `<a href="${fileUrl}" target="_blank" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-lg border border-blue-200 text-[11px] transition inline-block">View File</a>`
-                    : `<span class="text-slate-400 text-[11px] italic mr-1">No File</span>`;
-
-                return `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="p-4 font-bold text-slate-700">${reqId}</td>
-                        <td class="p-4 font-semibold text-slate-900">${name}</td>
-                        <td class="p-4 text-slate-600">${type}</td>
-                        <td class="p-4 text-slate-500">${date}</td>
-                        <td class="p-4">
-                            <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${badgeStyle}">${status}</span>
-                        </td>
-                        <td class="p-4 text-center space-x-1">
-                            ${viewFileBtn}
-                            <button onclick="viewRequestDetails('${rawDbId}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
-                                View
+            tbody.innerHTML = requests.map(req => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-bold text-slate-700">${Api.escape(req.reference_no)}</td>
+                    <td class="p-4 font-semibold text-slate-900">${Api.escape(req.resident_name)}</td>
+                    <td class="p-4 text-slate-600">${Api.escape(req.document_type)}</td>
+                    <td class="p-4 text-slate-500">${Api.escape(Api.formatDate(req.created_at))}</td>
+                    <td class="p-4">
+                        <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
+                    </td>
+                    <td class="p-4 text-center space-x-1 whitespace-nowrap">
+                        <button onclick="viewRequestDetails(${req.request_id})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
+                            View${req.file_count ? ` (${req.file_count} file${req.file_count === 1 ? '' : 's'})` : ''}
+                        </button>
+                        ${(NEXT_STEPS[req.status] || []).map(step => `
+                            <button onclick="updateStatus(${req.request_id}, '${step.status}')" class="${step.classes} font-bold px-2.5 py-1 rounded-lg border text-[11px] transition">
+                                ${step.label}
                             </button>
-                            ${status.toLowerCase() === 'pending' ? `
-                                <button onclick="updateStatus('${rawDbId}', 'Approved')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px] transition">
-                                    Approve
-                                </button>
-                                <button onclick="updateStatus('${rawDbId}', 'Rejected')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-lg border border-rose-200 text-[11px] transition">
-                                    Reject
-                                </button>
-                            ` : ''}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+                        `).join('')}
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        function viewRequestDetails(dbId) {
-            const req = allRequests.find((r, idx) => String(r.id || r.request_id || (idx + 1)) === String(dbId));
-            if (!req) return;
+        function detail(label, value, wide) {
+            return `
+                <div class="${wide ? 'col-span-2' : ''}">
+                    <span class="block text-slate-400 font-semibold uppercase text-[10px]">${label}</span>
+                    <span class="text-slate-800 font-medium">${value}</span>
+                </div>`;
+        }
 
+        function filePreview(file) {
+            if (!file.data_url) return `<p class="text-slate-400 italic">${Api.escape(file.file_name)}: preview not available</p>`;
+            const media = file.mime_type === 'application/pdf'
+                ? `<iframe src="${Api.escape(file.data_url)}" class="w-full h-72 rounded-lg border border-slate-200"></iframe>`
+                : `<img src="${Api.escape(file.data_url)}" alt="${Api.escape(file.file_name)}" class="w-full max-h-72 object-contain rounded-lg border border-slate-200 bg-slate-50">`;
+            return `
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[11px] text-slate-500">
+                        <span class="font-semibold truncate">${Api.escape(file.file_name)}</span>
+                        <span class="shrink-0 ml-2">${Api.escape(Api.formatDate(file.uploaded_at))}</span>
+                    </div>
+                    ${media}
+                </div>`;
+        }
+
+        async function viewRequestDetails(id) {
             const modalBody = document.getElementById('detailsModalBody');
             const modalActions = document.getElementById('detailsModalActions');
-            
-            const fileUrl = req.file_url || req.fileUrl || '';
-            const fileDisplay = fileUrl 
-                ? `<a href="${fileUrl}" target="_blank" class="text-blue-600 font-bold underline hover:text-blue-800">Click to View Attachment / File</a>` 
-                : `<span class="text-slate-400 italic">No file attached</span>`;
+            modalBody.innerHTML = '<p class="text-slate-500 text-center py-6">Loading request...</p>';
+            modalActions.innerHTML = '<button onclick="closeDetailsModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">Close</button>';
+            document.getElementById('requestDetailsModal').classList.remove('hidden');
 
-            const rejectionReasonDisplay = req.rejection_reason 
-                ? `<div class="col-span-2 bg-red-50 p-2.5 rounded-xl border border-red-200">
-                    <span class="block text-red-600 font-semibold uppercase text-[10px]">Rejection Reason Note</span>
-                    <span class="text-red-800 font-medium">${req.rejection_reason}</span>
-                   </div>`
-                : '';
-
-            const formattedModalReqId = String(req.id || req.request_id || dbId).startsWith('REQ-') 
-                ? (req.id || req.request_id || dbId) 
-                : `REQ-00${req.id || req.request_id || dbId}`;
+            let req;
+            try {
+                req = await Api.get('admin', `/api/requests/${id}`);
+            } catch (err) {
+                modalBody.innerHTML = `<p class="text-red-600 text-center py-6">${Api.escape(err.message)}</p>`;
+                return;
+            }
 
             modalBody.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Request ID</span>
-                        <span class="font-bold text-slate-800">${formattedModalReqId}</span>
+                    ${detail('Request ID', `<span class="font-bold">${Api.escape(req.reference_no)}</span>`)}
+                    ${detail('Status', `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>`)}
+                    ${detail('Resident Name', Api.escape(req.resident_name))}
+                    ${detail('Document Requested', Api.escape(req.document_type))}
+                    ${detail('Contact Number', Api.escape(req.resident_phone || 'N/A'))}
+                    ${detail('Email', Api.escape(req.resident_email || 'N/A'))}
+                    ${detail('Purpose', Api.escape(req.purpose || 'Not specified'), true)}
+                    ${detail('Date Submitted', Api.escape(Api.formatDate(req.created_at)))}
+                    ${detail('Fee', req.fee > 0 ? `₱${req.fee.toFixed(2)}` : 'Free')}
+                    ${req.reviewed_by_name ? detail('Last Reviewed By', `${Api.escape(req.reviewed_by_name)} on ${Api.escape(Api.formatDate(req.reviewed_at))}`, true) : ''}
+                    ${req.rejection_reason ? `
+                        <div class="col-span-2 bg-red-50 p-2.5 rounded-xl border border-red-200">
+                            <span class="block text-red-600 font-semibold uppercase text-[10px]">Rejection Reason Note</span>
+                            <span class="text-red-800 font-medium">${Api.escape(req.rejection_reason)}</span>
+                        </div>` : ''}
+                    <div class="col-span-2 space-y-3">
+                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Submitted Attachments (${req.files.length})</span>
+                        ${req.files.length ? req.files.map(filePreview).join('') : '<span class="text-slate-400 italic">No file attached</span>'}
                     </div>
-                    <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Status</span>
-                        <span class="font-bold text-slate-800">${req.status || 'Pending'}</span>
-                    </div>
-                    <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Resident Name</span>
-                        <span class="text-slate-800 font-medium">${req.resident_name || req.residentName || req.fullName || 'N/A'}</span>
-                    </div>
-                    <div>
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Document Requested</span>
-                        <span class="text-slate-800 font-medium">${req.document_type || req.documentType || req.documentName || 'N/A'}</span>
-                    </div>
-                    <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Submitted Attachment</span>
-                        ${fileDisplay}
-                    </div>
-                    <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Purpose</span>
-                        <span class="text-slate-800 font-medium">${req.purpose || 'Not specified'}</span>
-                    </div>
-                    <div class="col-span-2">
-                        <span class="block text-slate-400 font-semibold uppercase text-[10px]">Date Submitted</span>
-                        <span class="text-slate-800 font-medium">${req.date_submitted || req.dateSubmitted || 'N/A'}</span>
-                    </div>
-                    ${rejectionReasonDisplay}
                 </div>
             `;
 
             modalActions.innerHTML = `
                 <button onclick="closeDetailsModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">Close</button>
-                ${(req.status || 'Pending').toLowerCase() === 'pending' ? `
-                    <button onclick="updateStatus('${dbId}', 'Approved'); closeDetailsModal();" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve Request</button>
-                    <button onclick="updateStatus('${dbId}', 'Rejected'); closeDetailsModal();" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Reject Request</button>
-                ` : ''}
+                ${(NEXT_STEPS[req.status] || []).map(step => `
+                    <button onclick="updateStatus(${req.request_id}, '${step.status}', true)" class="${step.solid} text-white font-bold px-4 py-2 rounded-xl text-xs transition">${step.label}</button>
+                `).join('')}
             `;
-
-            document.getElementById('requestDetailsModal').classList.remove('hidden');
         }
 
         function closeDetailsModal() {
             document.getElementById('requestDetailsModal').classList.add('hidden');
         }
 
-        async function updateStatus(dbId, newStatus) {
-            let rejectionReason = null;
+        async function updateStatus(id, newStatus, fromModal) {
+            let rejectionReason;
             if (newStatus === 'Rejected') {
-                rejectionReason = prompt("Please enter the reason for rejecting this request:");
+                rejectionReason = prompt('Please enter the reason for rejecting this request:');
                 if (rejectionReason === null) return;
                 if (!rejectionReason.trim()) {
-                    alert("A rejection reason is required so the resident knows what to correct.");
+                    alert('A rejection reason is required so the resident knows what to correct.');
                     return;
                 }
             }
 
             try {
-                const response = await fetch(`/api/requests/${dbId}/status`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        status: newStatus,
-                        rejection_reason: rejectionReason
-                    })
+                await Api.request('admin', 'PATCH', `/api/requests/${id}/status`, {
+                    json: { status: newStatus, rejection_reason: rejectionReason }
                 });
-
-                if (response.ok) {
-                    loadRequestsTable();
-                } else {
-                    updateStatusLocalStorage(dbId, newStatus, rejectionReason);
-                }
-            } catch (err) {
-                console.error('API call failed, falling back to local state:', err);
-                updateStatusLocalStorage(dbId, newStatus, rejectionReason);
-            }
-        }
-
-        function updateStatusLocalStorage(dbId, newStatus, rejectionReason) {
-            const stored = localStorage.getItem('documentRequests');
-            if (!stored) return;
-            let requests = JSON.parse(stored);
-
-            const index = requests.findIndex((r, idx) => String(r.id || r.request_id || (idx + 1)) === String(dbId));
-            if (index !== -1) {
-                requests[index].status = newStatus;
-                if (rejectionReason) requests[index].rejection_reason = rejectionReason;
-                localStorage.setItem('documentRequests', JSON.stringify(requests));
+                if (fromModal) closeDetailsModal();
                 loadRequestsTable();
+            } catch (err) {
+                alert(err.message);
             }
-        }
-
-        function filterRequests() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const filter = document.getElementById('statusFilter').value;
-
-            const filtered = allRequests.filter(req => {
-                const name = (req.resident_name || req.residentName || req.fullName || '').toLowerCase();
-                const id = String(req.id || req.request_id || '').toLowerCase();
-                const formattedId = `req-00${id}`;
-                const matchesSearch = name.includes(search) || id.includes(search) || formattedId.includes(search);
-
-                const reqStatus = req.status || 'Pending';
-                const matchesStatus = filter === 'All' || reqStatus === filter;
-
-                return matchesSearch && matchesStatus;
-            });
-
-            renderRequests(filtered);
-        }
-
-        function openProfileModal() {
-            const currentAdmin = getActiveAdmin();
-            document.getElementById('modalProfileName').innerText = currentAdmin.name || 'Admin User';
-            document.getElementById('modalProfileRole').innerText = currentAdmin.role || 'Barangay Official';
-            document.getElementById('profileUsername').value = `@${currentAdmin.username || 'admin'}`;
-            document.getElementById('profileEmail').value = currentAdmin.email || '';
-            document.getElementById('profilePhone').value = currentAdmin.phone || '';
-
-            const avatarElem = document.getElementById('modalAvatar');
-            if (currentAdmin.profilePic) {
-                avatarElem.innerHTML = `<img src="${currentAdmin.profilePic}" class="w-full h-full object-cover rounded-full">`;
-            } else {
-                avatarElem.innerText = (currentAdmin.name || 'A').charAt(0).toUpperCase();
-            }
-
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-            document.getElementById('modalAlert').classList.add('hidden');
-
-            document.getElementById('profileModal').classList.remove('hidden');
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                document.getElementById('modalAvatar').innerHTML = `<img src="${base64Image}" class="w-full h-full object-cover rounded-full">`;
-
-                let currentAdmin = getActiveAdmin();
-                currentAdmin.profilePic = base64Image;
-                localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-                if (currentAdmin.username === 'admin') {
-                    let masterAdmin = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-                    masterAdmin.profilePic = base64Image;
-                    localStorage.setItem('masterAdminDetails', JSON.stringify(masterAdmin));
-                } else {
-                    let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                    const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
-                    if (idx !== -1) {
-                        storedOfficials[idx].profilePic = base64Image;
-                        localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                    }
-                }
-                setupNavbarProfile();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function handleSaveProfileDetails(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const email = document.getElementById('profileEmail').value.trim();
-            const phone = document.getElementById('profilePhone').value.trim();
-
-            let currentAdmin = getActiveAdmin();
-            currentAdmin.email = email;
-            currentAdmin.phone = phone;
-
-            localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-            if (currentAdmin.username === 'admin') {
-                let masterAdmin = JSON.parse(localStorage.getItem('masterAdminDetails') || '{}');
-                masterAdmin.email = email;
-                masterAdmin.phone = phone;
-                localStorage.setItem('masterAdminDetails', JSON.stringify(masterAdmin));
-            } else {
-                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
-                if (idx !== -1) {
-                    storedOfficials[idx].email = email;
-                    storedOfficials[idx].phone = phone;
-                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                }
-            }
-
-            showModalAlert(alertBox, 'Profile details saved successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-        }
-
-        function handleChangePassword(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const currentPassInput = document.getElementById('currentPassword').value;
-            const newPassInput = document.getElementById('newPassword').value;
-            const confirmPassInput = document.getElementById('confirmPassword').value;
-
-            if (newPassInput !== confirmPassInput) {
-                showModalAlert(alertBox, 'New passwords do not match.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                return;
-            }
-
-            const currentAdmin = getActiveAdmin();
-            let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-
-            if (currentAdmin.username === 'admin') {
-                showModalAlert(alertBox, 'Password updated successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1000);
-                return;
-            }
-
-            const officialIndex = storedOfficials.findIndex(acc => acc.username === currentAdmin.username);
-
-            if (officialIndex !== -1) {
-                if (storedOfficials[officialIndex].password !== currentPassInput) {
-                    showModalAlert(alertBox, 'Current password is incorrect.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                    return;
-                }
-
-                storedOfficials[officialIndex].password = newPassInput;
-                localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-
-                showModalAlert(alertBox, 'Password changed successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1200);
-            }
-        }
-
-        function showModalAlert(element, text, classes) {
-            element.className = `text-xs text-center py-2 px-3 rounded-lg font-medium ${classes}`;
-            element.innerText = text;
-            element.classList.remove('hidden');
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('isAdminLoggedIn');
-            sessionStorage.clear();
-            window.location.replace('admin.html');
         }
     </script>
 </body>

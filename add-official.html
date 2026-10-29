@@ -42,7 +42,7 @@
                 <!-- Profile Link & Button -->
                 <button onclick="openProfileModal()" class="flex items-center space-x-2 text-blue-100 hover:text-white transition cursor-pointer border-l border-blue-800/80 pl-4">
                     <div id="navAvatarContainer" class="w-8 h-8 rounded-full bg-blue-200 text-[#1e3a8a] flex items-center justify-center text-xs font-bold overflow-hidden shrink-0 border border-white/20">
-                        <span id="navAvatarInitial">A</span>
+                        <span id="navAvatarInitial"></span>
                     </div>
                     <span id="navProfileName">Profile</span>
                 </button>
@@ -125,12 +125,20 @@
                             <i class="fa-solid fa-id-card text-xs"></i>
                         </span>
                         <select id="officialRole" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
-                            <option value="" disabled selected>Select position or role</option>
-                            <option value="Barangay Captain">Barangay Captain</option>
-                            <option value="Barangay Secretary">Barangay Secretary</option>
-                            <option value="Barangay Treasurer">Barangay Treasurer</option>
-                            <option value="Kagawad">Barangay Kagawad</option>
-                            <option value="Administrative Staff">Administrative Staff</option>
+                            <option value="" disabled selected>Loading positions...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Access Level *</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <i class="fa-solid fa-shield-halved text-xs"></i>
+                        </span>
+                        <select id="officialAccess" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                            <option value="official">Official: handles requests, appointments and announcements</option>
+                            <option value="admin">Admin: can also manage officials and settings</option>
                         </select>
                     </div>
                 </div>
@@ -141,7 +149,7 @@
                         <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
                             <i class="fa-solid fa-lock text-xs"></i>
                         </span>
-                        <input type="password" id="officialTempPassword" required placeholder="Create temporary password" 
+                        <input type="password" id="officialTempPassword" required minlength="8" placeholder="Create temporary password (8+ characters)"
                             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
                     </div>
                 </div>
@@ -152,7 +160,7 @@
                     <a href="admin-dashboard.html" class="w-1/3 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl text-xs transition">
                         Cancel
                     </a>
-                    <button type="submit" class="w-2/3 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2">
+                    <button type="submit" id="registerBtn" class="w-2/3 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2 disabled:opacity-60">
                         <i class="fa-solid fa-user-plus"></i>
                         <span>Register Official</span>
                     </button>
@@ -167,14 +175,14 @@
             <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
                 <div class="flex items-center space-x-3">
                     <div class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()">
-                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0">A</div>
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/40 shadow-sm shrink-0"></div>
                         <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                     <div>
                         <h3 id="modalProfileName" class="font-bold text-sm">Admin Profile</h3>
-                        <p id="modalProfileRole" class="text-[11px] text-blue-200">System Admin</p>
+                        <p id="modalProfileRole" class="text-[11px] text-blue-200"></p>
                     </div>
                 </div>
                 <button onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition">
@@ -247,223 +255,80 @@
         </div>
     </div>
 
+    <script src="api-client.js"></script>
     <script>
-        if (localStorage.getItem('isAdminLoggedIn') !== 'true') {
-            window.location.replace('admin.html');
-        }
+        const session = Api.requireSession('admin');
 
         lucide.createIcons();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            setupNavbarProfile();
-        });
-
-        // Helper to retrieve image from all possible stored properties
-        function getAdminProfilePic(admin) {
-            if (!admin) return null;
-
-            if (admin.profilePic) return admin.profilePic;
-            if (admin.avatar) return admin.avatar;
-            if (admin.image) return admin.image;
-            if (admin.photo) return admin.photo;
-
-            const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-            const official = storedOfficials.find(o => 
-                (admin.username && o.username === admin.username) || 
-                (admin.name && o.name === admin.name)
-            );
-
-            if (official) {
-                return official.profilePic || official.avatar || official.image || official.photo || null;
+        if (session) {
+            Api.setupAdminNav();
+            if ((session.user || {}).role !== 'admin') {
+                // Only full admins may register officials; explain instead of letting the form fail.
+                const form = document.getElementById('addOfficialForm');
+                form.querySelectorAll('input, select, button[type="submit"]').forEach(el => { el.disabled = true; });
+                showAlert('Only admin accounts can register officials. Please ask an admin.', 'bg-amber-100 text-amber-800 border border-amber-300');
             }
-
-            return null;
+            loadPositions();
         }
 
-        function setupNavbarProfile() {
-            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            const navName = document.getElementById('navProfileName');
-            const navAvatarContainer = document.getElementById('navAvatarContainer');
-
-            if (currentAdmin.name && navName) {
-                navName.innerText = currentAdmin.name;
+        async function loadPositions() {
+            let select = document.getElementById('officialRole');
+            let positions = [];
+            try {
+                positions = (await Api.get(null, '/api/settings')).official_positions;
+            } catch (err) {
+                console.error('Could not load positions:', err.message);
             }
 
-            const picUrl = getAdminProfilePic(currentAdmin);
-
-            if (picUrl) {
-                navAvatarContainer.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover rounded-full">`;
-            } else if (currentAdmin.name) {
-                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">${currentAdmin.name.charAt(0).toUpperCase()}</span>`;
-            } else {
-                navAvatarContainer.innerHTML = `<span id="navAvatarInitial">A</span>`;
+            if (positions.length) {
+                select.innerHTML = '<option value="" disabled selected>Select position or role</option>' +
+                    positions.map(p => `<option value="${Api.escape(p)}">${Api.escape(p)}</option>`).join('');
+                return;
             }
+            // No position list configured yet: let the admin type the position.
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'officialRole';
+            input.required = true;
+            input.maxLength = 100;
+            input.placeholder = 'e.g. Barangay Secretary';
+            input.className = select.className;
+            input.disabled = select.disabled;
+            select.replaceWith(input);
         }
 
-        function handleRegisterOfficial(event) {
+        async function handleRegisterOfficial(event) {
             event.preventDefault();
+            const registerBtn = document.getElementById('registerBtn');
+            registerBtn.disabled = true;
+
+            try {
+                await Api.request('admin', 'POST', '/api/officials', {
+                    json: {
+                        full_name: document.getElementById('officialName').value.trim(),
+                        email: document.getElementById('officialEmail').value.trim(),
+                        phone_number: document.getElementById('officialPhone').value.trim(),
+                        username: document.getElementById('officialUsername').value.trim(),
+                        position: document.getElementById('officialRole').value.trim(),
+                        role: document.getElementById('officialAccess').value,
+                        password: document.getElementById('officialTempPassword').value
+                    }
+                });
+                showAlert('Official registered successfully! Redirecting to dashboard...', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
+                setTimeout(() => {
+                    window.location.href = 'admin-dashboard.html';
+                }, 1000);
+            } catch (err) {
+                showAlert(err.message, 'bg-rose-100 text-rose-800 border border-rose-300');
+                registerBtn.disabled = false;
+            }
+        }
+
+        function showAlert(text, classes) {
             const alertBox = document.getElementById('formAlert');
-            
-            const name = document.getElementById('officialName').value.trim();
-            const email = document.getElementById('officialEmail').value.trim();
-            const phone = document.getElementById('officialPhone').value.trim();
-            const username = document.getElementById('officialUsername').value.trim().toLowerCase();
-            const role = document.getElementById('officialRole').value;
-            const password = document.getElementById('officialTempPassword').value;
-
-            const storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-            
-            if (storedOfficials.some(o => o.username === username) || username === 'admin') {
-                showAlert(alertBox, 'Username already taken. Please choose another username.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                return;
-            }
-
-            const newOfficial = { name, email, phone, username, role, password, profilePic: null, dateCreated: '2026-09-23' };
-            storedOfficials.push(newOfficial);
-            localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-
-            showAlert(alertBox, 'Official registered successfully! Redirecting to dashboard...', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-
-            setTimeout(() => {
-                window.location.href = 'admin-dashboard.html';
-            }, 1000);
-        }
-
-        function showAlert(element, text, classes) {
-            element.className = `text-xs text-center py-2.5 px-3 rounded-xl font-medium ${classes}`;
-            element.innerText = text;
-            element.classList.remove('hidden');
-        }
-
-        /* --- Profile Modal, Avatar Upload & Password Logic --- */
-        function openProfileModal() {
-            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            document.getElementById('modalProfileName').innerText = currentAdmin.name || 'Admin User';
-            document.getElementById('modalProfileRole').innerText = currentAdmin.role || 'Barangay Official';
-            document.getElementById('profileUsername').value = `@${currentAdmin.username || 'admin'}`;
-            document.getElementById('profileEmail').value = currentAdmin.email || '';
-            document.getElementById('profilePhone').value = currentAdmin.phone || '';
-
-            const avatarElem = document.getElementById('modalAvatar');
-            const picUrl = getAdminProfilePic(currentAdmin);
-
-            if (picUrl) {
-                avatarElem.innerHTML = `<img src="${picUrl}" class="w-full h-full object-cover rounded-full">`;
-            } else {
-                avatarElem.innerText = (currentAdmin.name || 'A').charAt(0).toUpperCase();
-            }
-
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
-            document.getElementById('confirmPassword').value = '';
-            document.getElementById('modalAlert').classList.add('hidden');
-
-            document.getElementById('profileModal').classList.remove('hidden');
-        }
-
-        function closeProfileModal() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                document.getElementById('modalAvatar').innerHTML = `<img src="${base64Image}" class="w-full h-full object-cover rounded-full">`;
-
-                let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-                currentAdmin.profilePic = base64Image;
-                currentAdmin.avatar = base64Image;
-                currentAdmin.image = base64Image;
-                localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const idx = storedOfficials.findIndex(o => 
-                    (currentAdmin.username && o.username === currentAdmin.username) || 
-                    (currentAdmin.name && o.name === currentAdmin.name)
-                );
-                if (idx !== -1) {
-                    storedOfficials[idx].profilePic = base64Image;
-                    storedOfficials[idx].avatar = base64Image;
-                    storedOfficials[idx].image = base64Image;
-                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                }
-
-                setupNavbarProfile();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function handleSaveProfileDetails(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const email = document.getElementById('profileEmail').value.trim();
-            const phone = document.getElementById('profilePhone').value.trim();
-
-            let currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            currentAdmin.email = email;
-            currentAdmin.phone = phone;
-
-            localStorage.setItem('adminUser', JSON.stringify(currentAdmin));
-
-            if (currentAdmin.username !== 'admin') {
-                let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-                const idx = storedOfficials.findIndex(o => o.username === currentAdmin.username);
-                if (idx !== -1) {
-                    storedOfficials[idx].email = email;
-                    storedOfficials[idx].phone = phone;
-                    localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-                }
-            }
-
-            showAlert(alertBox, 'Profile details saved successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-        }
-
-        function handleChangePassword(event) {
-            event.preventDefault();
-            const alertBox = document.getElementById('modalAlert');
-            const currentPassInput = document.getElementById('currentPassword').value;
-            const newPassInput = document.getElementById('newPassword').value;
-            const confirmPassInput = document.getElementById('confirmPassword').value;
-
-            if (newPassInput !== confirmPassInput) {
-                showAlert(alertBox, 'New passwords do not match.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                return;
-            }
-
-            const currentAdmin = JSON.parse(localStorage.getItem('adminUser') || '{}');
-            let storedOfficials = JSON.parse(localStorage.getItem('barangayOfficials') || '[]');
-
-            if (currentAdmin.username === 'admin') {
-                showAlert(alertBox, 'Password updated successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1000);
-                return;
-            }
-
-            const officialIndex = storedOfficials.findIndex(acc => acc.username === currentAdmin.username);
-
-            if (officialIndex !== -1) {
-                if (storedOfficials[officialIndex].password !== currentPassInput) {
-                    showAlert(alertBox, 'Current password is incorrect.', 'bg-rose-100 text-rose-800 border border-rose-300');
-                    return;
-                }
-
-                storedOfficials[officialIndex].password = newPassInput;
-                localStorage.setItem('barangayOfficials', JSON.stringify(storedOfficials));
-
-                showAlert(alertBox, 'Password changed successfully!', 'bg-emerald-100 text-emerald-800 border border-emerald-300');
-                setTimeout(closeProfileModal, 1200);
-            }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('isAdminLoggedIn');
-            localStorage.removeItem('adminUser');
-            sessionStorage.clear();
-            window.location.replace('admin.html');
+            alertBox.className = `text-xs text-center py-2.5 px-3 rounded-xl font-medium ${classes}`;
+            alertBox.innerText = text;
         }
     </script>
 </body>

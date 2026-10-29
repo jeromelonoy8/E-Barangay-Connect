@@ -94,15 +94,15 @@
         <!-- Header & Profile Summary Card -->
         <div class="flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Welcome, Jerome!</h1>
+                <h1 id="welcomeHeading" class="text-3xl font-bold text-gray-900">Welcome!</h1>
                 <p class="text-gray-500 text-sm mt-1">Here's an overview of your document requests, announcements, and submitted files</p>
             </div>
 
             <a href="profile.html" class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center space-x-3 hover:border-blue-200 transition">
-                <img id="badgeProfilePic" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Profile Picture" class="w-10 h-10 rounded-full object-cover border border-slate-200">
+                <div id="badgeAvatar" class="w-10 h-10 rounded-full border border-slate-200 bg-blue-50 text-[#1e3a8a] font-bold flex items-center justify-center overflow-hidden"></div>
                 <div>
-                    <h3 class="text-xs font-bold text-gray-900">Jerome Lonoy</h3>
-                    <p class="text-[10px] text-gray-400 font-medium">Resident ID: #RES-8821 <i class="fa-solid fa-chevron-right text-[8px] ml-0.5"></i></p>
+                    <h3 id="badgeName" class="text-xs font-bold text-gray-900"></h3>
+                    <p class="text-[10px] text-gray-400 font-medium"><span id="badgeResidentId"></span> <i class="fa-solid fa-chevron-right text-[8px] ml-0.5"></i></p>
                 </div>
             </a>
         </div>
@@ -140,7 +140,7 @@
             </h2>
 
             <div id="announcementsContainer" class="space-y-3">
-                <!-- Dynamically populated from localStorage -->
+                <!-- Loaded from the API -->
             </div>
         </div>
 
@@ -149,209 +149,129 @@
             <h2 class="text-lg font-bold text-slate-800">Recent Requests</h2>
 
             <div id="recentRequestsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Dynamically Populated from localStorage -->
+                <!-- Loaded from the API -->
             </div>
         </div>
 
     </main>
 
+    <script src="api-client.js"></script>
     <script>
         lucide.createIcons();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadUploadedProfilePic();
+        const session = Api.requireSession('resident');
+        Api.setupResidentNav();
+
+        if (session) {
+            renderProfile(session.user);
+            loadProfile();
+            loadRequests();
             loadAnnouncements();
-            renderDashboardRequests();
-        });
+        }
 
-        // Dynamic Loading of Announcements posted from Admin Portal
-        function loadAnnouncements() {
+        async function loadProfile() {
+            try {
+                const { user } = await Api.get('resident', '/api/auth/me');
+                Api.saveSession('resident', null, user);
+                renderProfile(user);
+            } catch (err) {
+                console.error('Could not load profile:', err.message);
+            }
+        }
+
+        function renderProfile(user) {
+            if (!user) return;
+            const name = user.full_name || user.username;
+            document.getElementById('welcomeHeading').innerText = `Welcome, ${name.split(' ')[0]}!`;
+            document.getElementById('badgeName').innerText = name;
+            document.getElementById('badgeResidentId').innerText = `Resident ID: #RES-${String(user.id).padStart(4, '0')}`;
+            Api.renderAvatar(document.getElementById('badgeAvatar'), user);
+        }
+
+        async function loadAnnouncements() {
             const container = document.getElementById('announcementsContainer');
-            if (!container) return;
-
-            const storedAnnouncements = localStorage.getItem('barangayAnnouncements');
-            const announcements = storedAnnouncements ? JSON.parse(storedAnnouncements) : [];
-
-            if (!Array.isArray(announcements) || announcements.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-white p-6 rounded-2xl border border-dashed border-slate-200 text-center">
-                        <i class="fa-solid fa-bullhorn text-2xl text-slate-300 mb-2 block"></i>
-                        <p class="text-xs text-slate-500 font-medium">No announcements posted yet.</p>
-                        <p class="text-[10px] text-slate-400 mt-0.5">Check back later for official announcements from the barangay office.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = announcements.map(item => `
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
-                    <div class="flex justify-between items-start">
-                        <h3 class="text-sm font-bold text-slate-900">${item.title}</h3>
-                        <span class="text-[10px] text-slate-400 font-medium flex items-center space-x-1">
-                            <i class="fa-regular fa-calendar mr-1 text-[9px]"></i>
-                            <span>${item.date || '2026-09-23'}</span>
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line mt-1">${item.body || item.content || item.description || ''}</p>
-                    <p class="text-[10px] font-bold text-[#1e3a8a] tracking-wider pt-2">POSTED BY: BARANGAY OFFICE</p>
-                </div>
-            `).join('');
-        }
-
-        // Fixed Profile Pic Loader that survives logout/login
-        function loadUploadedProfilePic() {
-            const badgeImg = document.getElementById('badgeProfilePic');
-            if (!badgeImg) return;
-
-            // 1. Check direct storage keys where profile image base64 or URL could be saved
-            let savedPic = localStorage.getItem('profilePic') || 
-                           localStorage.getItem('userProfilePic') || 
-                           localStorage.getItem('residentProfilePic') || 
-                           localStorage.getItem('profileImage');
-
-            // 2. Check stored user objects
-            const residentUserData = localStorage.getItem('residentUser') || localStorage.getItem('user');
-            if (residentUserData) {
-                try {
-                    const parsedUser = JSON.parse(residentUserData);
-                    if (!savedPic && (parsedUser.profilePic || parsedUser.profileImage || parsedUser.avatar || parsedUser.photo)) {
-                        savedPic = parsedUser.profilePic || parsedUser.profileImage || parsedUser.avatar || parsedUser.photo;
-                    }
-                } catch (e) {
-                    console.error('Error parsing user data:', e);
+            try {
+                const announcements = await Api.get(null, '/api/announcements?limit=5');
+                if (announcements.length === 0) {
+                    container.innerHTML = `
+                        <div class="bg-white p-6 rounded-2xl border border-dashed border-slate-200 text-center">
+                            <i class="fa-solid fa-bullhorn text-2xl text-slate-300 mb-2 block"></i>
+                            <p class="text-xs text-slate-500 font-medium">No announcements posted yet.</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Check back later for official announcements from the barangay office.</p>
+                        </div>
+                    `;
+                    return;
                 }
-            }
 
-            // 3. If image was found in any key, display it and keep user object updated
-            if (savedPic) {
-                badgeImg.src = savedPic;
-                localStorage.setItem('profilePic', savedPic);
-
-                if (residentUserData) {
-                    try {
-                        const parsedUser = JSON.parse(residentUserData);
-                        parsedUser.profilePic = savedPic;
-                        localStorage.setItem('residentUser', JSON.stringify(parsedUser));
-                    } catch (e) {
-                        console.error('Error updating residentUser:', e);
-                    }
-                }
+                container.innerHTML = announcements.map(item => `
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-1">
+                        <div class="flex justify-between items-start gap-3">
+                            <div>
+                                ${item.category ? `<span class="text-[10px] font-bold uppercase tracking-wider text-[#1e3a8a]">${Api.escape(item.category)}</span>` : ''}
+                                <h3 class="text-sm font-bold text-slate-900">${Api.escape(item.title)}</h3>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-medium flex items-center space-x-1 shrink-0">
+                                <i class="fa-regular fa-calendar mr-1 text-[9px]"></i>
+                                <span>${Api.escape(Api.formatDate(item.created_at))}</span>
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line mt-1">${Api.escape(item.body)}</p>
+                        <p class="text-[10px] font-bold text-[#1e3a8a] tracking-wider pt-2">POSTED BY: ${Api.escape((item.author_name || 'Barangay Office').toUpperCase())}</p>
+                    </div>
+                `).join('');
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
             }
         }
 
-        // Dynamic Request Rendering
-        function renderDashboardRequests() {
+        async function loadRequests() {
             const container = document.getElementById('recentRequestsContainer');
-            const totalCountEl = document.getElementById('totalRequestsCount');
-            const pendingCountEl = document.getElementById('pendingRequestsCount');
+            try {
+                const requests = await Api.get('resident', '/api/requests/mine');
+                document.getElementById('totalRequestsCount').innerText = requests.length;
+                document.getElementById('pendingRequestsCount').innerText = requests.filter(r => r.status === 'Pending').length;
 
-            const storedData = localStorage.getItem('documentRequests');
-            const requests = storedData ? JSON.parse(storedData) : [];
-
-            totalCountEl.innerText = requests.length;
-            const pendingCount = requests.filter(r => (r.status || 'Pending') === 'Pending').length;
-            pendingCountEl.innerText = pendingCount;
-
-            if (!Array.isArray(requests) || requests.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-1 md:col-span-2 text-center py-10 bg-white rounded-2xl border border-dashed border-slate-200">
-                        <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
-                        <p class="text-xs text-slate-500 font-medium">No active document requests.</p>
-                        <a href="new-request.html" class="inline-block mt-3 text-xs text-[#1e3a8a] font-bold hover:underline">Submit a New Request &rarr;</a>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = requests.map((req, index) => {
-                const docName = req.documentType || req.documentName || req.document || 'Barangay Document';
-                const submissionDate = req.dateSubmitted || req.submittedDate || req.date || '2026-09-23';
-                const reqStatus = req.status || 'Pending';
-                const reqId = req.id || `REQ-00${index + 1}`;
-
-                let badgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
-                if (reqStatus === 'Approved' || reqStatus === 'Ready') {
-                    badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-                } else if (reqStatus === 'Rejected') {
-                    badgeStyle = 'bg-red-100 text-red-800 border-red-200';
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-span-1 md:col-span-2 text-center py-10 bg-white rounded-2xl border border-dashed border-slate-200">
+                            <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
+                            <p class="text-xs text-slate-500 font-medium">No active document requests.</p>
+                            <a href="new-request.html" class="inline-block mt-3 text-xs text-[#1e3a8a] font-bold hover:underline">Submit a New Request &rarr;</a>
+                        </div>
+                    `;
+                    return;
                 }
 
-                let fileName = 'No file attached';
-                let hasFile = false;
-                let filesList = req.submittedFiles || req.files || req.file || [];
-                if (typeof filesList === 'string' && filesList.length > 0) {
-                    fileName = filesList;
-                    hasFile = true;
-                } else if (Array.isArray(filesList) && filesList.length > 0) {
-                    fileName = typeof filesList[0] === 'string' ? filesList[0] : (filesList[0].name || 'Attachment.png');
-                    hasFile = true;
-                }
-
-                return `
+                container.innerHTML = requests.slice(0, 6).map(req => `
                     <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold text-slate-400 tracking-wider">${reqId}</span>
-                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badgeStyle}">
-                                ${reqStatus}
+                            <span class="text-[10px] font-bold text-slate-400 tracking-wider">${Api.escape(req.reference_no)}</span>
+                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${Api.statusBadge(req.status)}">
+                                ${Api.escape(req.status)}
                             </span>
                         </div>
 
                         <div>
-                            <h3 class="text-sm font-bold text-slate-900">${docName}</h3>
-                            <p class="text-[11px] text-slate-400 font-medium mt-0.5">Submitted on ${submissionDate}</p>
+                            <h3 class="text-sm font-bold text-slate-900">${Api.escape(req.document_type)}</h3>
+                            <p class="text-[11px] text-slate-400 font-medium mt-0.5">Submitted on ${Api.escape(Api.formatDate(req.created_at))}</p>
                         </div>
 
                         <div class="pt-3 border-t border-slate-50 flex items-center justify-between text-xs">
                             <div class="flex items-center space-x-1.5 text-slate-500 font-medium truncate max-w-[180px]">
-                                <i class="fa-regular ${hasFile ? 'fa-file-image text-slate-400' : 'fa-file-xmark text-slate-300'}"></i>
-                                <span class="truncate">${fileName}</span>
+                                <i class="fa-regular ${req.file_count ? 'fa-file-image text-slate-400' : 'fa-file-xmark text-slate-300'}"></i>
+                                <span class="truncate">${req.file_count ? `${req.file_count} attachment${req.file_count === 1 ? '' : 's'}` : 'No file attached'}</span>
                             </div>
                             <a href="status.html" class="text-xs font-bold text-[#1e3a8a] hover:underline flex items-center space-x-1">
                                 <i class="fa-regular fa-eye text-[11px]"></i>
-                                <span>View File</span>
+                                <span>View Details</span>
                             </a>
                         </div>
                     </div>
-                `;
-            }).join('');
-        }
-
-        // Senior Mode Logic
-        let seniorModeActive = localStorage.getItem('senior_mode_active') === 'true';
-
-        function applySeniorMode() {
-            const btnText = document.getElementById('seniorBtnText');
-            const btn = document.getElementById('seniorModeBtn');
-
-            if (seniorModeActive) {
-                document.body.classList.add('senior-mode');
-                if (btnText) btnText.innerText = "Disable Senior Mode";
-                if (btn) {
-                    btn.classList.remove('bg-amber-400', 'hover:bg-amber-500');
-                    btn.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
-                }
-            } else {
-                document.body.classList.remove('senior-mode');
-                if (btnText) btnText.innerText = "Senior Mode";
-                if (btn) {
-                    btn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
-                    btn.classList.add('bg-amber-400', 'hover:bg-amber-500');
-                }
+                `).join('');
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
             }
         }
-
-        function toggleSeniorMode() {
-            seniorModeActive = !seniorModeActive;
-            localStorage.setItem('senior_mode_active', seniorModeActive);
-            applySeniorMode();
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('residentUser');
-            window.location.href = 'index.html';
-        }
-
-        applySeniorMode();
     </script>
 </body>
 </html>
