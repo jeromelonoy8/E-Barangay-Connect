@@ -3,7 +3,18 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 
 const env = process.env;
-const isProduction = env.NODE_ENV === 'production';
+
+// Reads a yes/no variable without caring about case or spacing ("true", "TRUE", "1", "yes").
+// Returns undefined when the variable is not set.
+function flag(name) {
+    const value = (env[name] || '').trim().toLowerCase();
+    if (value === '') return undefined;
+    if (['true', '1', 'yes', 'on'].includes(value)) return true;
+    if (['false', '0', 'no', 'off'].includes(value)) return false;
+    throw new Error(`Environment variable ${name} must be true or false (got "${env[name]}").`);
+}
+
+const isProduction = (env.NODE_ENV || '').trim().toLowerCase() === 'production';
 
 function required(name) {
     if (!env[name]) {
@@ -21,11 +32,11 @@ if (!jwtSecret) {
     console.warn('[CONFIG] JWT_SECRET is not set. Using a temporary secret; logins reset on restart.');
 }
 
-function parseTrustProxy(value) {
-    if (value === undefined || value === '') return 'loopback';
-    if (value === 'true') return true;
-    if (value === 'false') return false;
+function parseTrustProxy(raw) {
+    const value = (raw || '').trim();
+    if (value === '') return 'loopback';
     if (/^\d+$/.test(value)) return parseInt(value, 10);
+    if (/^(true|false)$/i.test(value)) return value.toLowerCase() === 'true';
     return value;
 }
 
@@ -37,6 +48,7 @@ module.exports = {
     timezone: env.APP_TIMEZONE || 'Asia/Manila',
     // Login/registration attempts allowed per IP address every 15 minutes.
     authRateLimit: parseInt(env.AUTH_RATE_LIMIT || '20', 10),
+    autoMigrate: flag('AUTO_MIGRATE') !== false,
 
     db: {
         host: required('DB_HOST'),
@@ -45,7 +57,7 @@ module.exports = {
         password: env.DB_PASSWORD || '',
         database: required('DB_NAME'),
         // Aiven and most hosted MySQL providers require TLS; local servers usually do not.
-        ssl: env.DB_SSL === 'true' ? { rejectUnauthorized: env.DB_SSL_REJECT_UNAUTHORIZED === 'true' } : undefined
+        ssl: flag('DB_SSL') ? { rejectUnauthorized: flag('DB_SSL_REJECT_UNAUTHORIZED') === true } : undefined
     },
 
     jwt: {

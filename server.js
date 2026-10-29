@@ -8,7 +8,7 @@ async function start() {
         await pool.query('SELECT 1');
         console.log('Connected to MySQL Database successfully.');
         // Keeps the hosted database schema in step with the code on every deploy.
-        if (process.env.AUTO_MIGRATE !== 'false') await migrate();
+        if (config.autoMigrate) await migrate();
     } catch (err) {
         console.error('Database startup failed:', err.message);
         process.exit(1);
