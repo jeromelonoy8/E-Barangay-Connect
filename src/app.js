@@ -27,6 +27,7 @@ app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/officials', require('./routes/officials'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/stats', require('./routes/stats'));
 
 app.use('/api', (req, res) => {
     res.status(404).json({ error: `No API endpoint for ${req.method} ${req.originalUrl}` });
@@ -38,7 +39,7 @@ app.use('/api', (req, res) => {
 // Server code, package files and anything in subfolders are never served.
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_EXTENSIONS = new Set(['.html', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico']);
-const PUBLIC_SCRIPTS = new Set(['/api-client.js']);
+const PUBLIC_SCRIPTS = new Set(['/api-client.js', '/dashboard-charts.js']);
 const serveStatic = express.static(ROOT, { index: 'index.html', dotfiles: 'ignore' });
 
 app.use((req, res, next) => {

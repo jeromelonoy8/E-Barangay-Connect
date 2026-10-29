@@ -479,6 +479,34 @@ describe('admin dashboard', () => {
         assert.equal(res.data.recent_requests.length, 2);
     });
 
+    test('overview charts count this month\'s bookings and the most requested documents', async () => {
+        // One booking today-month that counts, and a cancelled one that must not.
+        const [juan] = await db.query("SELECT user_id FROM users WHERE username = 'juan'");
+        const firstOfMonth = `${require('../src/utils/time').today().slice(0, 7)}-01`;
+        await db.query(
+            "INSERT INTO appointments (user_id, purpose, scheduled_date, time_slot, status) VALUES (?, 'Consultation', ?, 'x', 'Completed'), (?, 'Consultation', ?, 'x', 'Cancelled')",
+            [juan.user_id, firstOfMonth, juan.user_id, firstOfMonth]
+        );
+
+        assert.equal((await api('GET', '/api/stats/overview')).status, 401);
+        const res = await api('GET', '/api/stats/overview', { token: tokens.maria });
+        assert.equal(res.status, 200);
+
+        const { bookings } = res.data;
+        const [expected] = await db.query(
+            "SELECT COUNT(*) AS n, COUNT(DISTINCT user_id) AS people FROM appointments WHERE DATE_FORMAT(scheduled_date, '%Y-%m') = ? AND status <> 'Cancelled'",
+            [res.data.month]
+        );
+        assert.equal(bookings.total, Number(expected.n));
+        assert.equal(bookings.residents, Number(expected.people));
+        assert.equal(bookings.by_day.reduce((sum, d) => sum + d.bookings, 0), bookings.total);
+        assert.equal(bookings.by_day[0].date, firstOfMonth);
+        assert.ok(bookings.by_day[0].bookings >= 1);
+
+        // Maria's request was cancelled, so only the completed clearance counts.
+        assert.deepEqual(res.data.top_documents.map(d => [d.document_type, d.requests]), [['Barangay Clearance', 1]]);
+    });
+
     test('residents list and deactivation', async () => {
         const list = await api('GET', '/api/admin/residents?search=jose', { token: tokens.admin });
         assert.equal(list.data.length, 1);

@@ -108,27 +108,62 @@
         </div>
 
         <!-- Metric Stat Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Total Requests Card -->
-            <div class="dashboard-card bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Requests</p>
                     <h2 class="text-3xl font-bold text-slate-900 mt-1" id="totalRequestsCount">0</h2>
                 </div>
-                <div class="w-12 h-12 bg-blue-50 text-[#1e3a8a] rounded-xl flex items-center justify-center text-lg">
+                <div class="w-11 h-11 bg-blue-50 text-[#1e3a8a] rounded-xl flex items-center justify-center text-lg shrink-0">
                     <i class="fa-regular fa-file-lines"></i>
                 </div>
             </div>
-
-            <!-- Pending Requests Card -->
-            <div class="dashboard-card bg-white p-6 rounded-2xl border border-amber-100/60 shadow-sm flex items-center justify-between">
+            <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wider text-amber-500">Pending</p>
                     <h2 class="text-3xl font-bold text-amber-600 mt-1" id="pendingRequestsCount">0</h2>
                 </div>
-                <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center text-lg">
+                <div class="w-11 h-11 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center text-lg shrink-0">
                     <i class="fa-regular fa-clock"></i>
                 </div>
+            </div>
+            <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-blue-500">Ready for Pickup</p>
+                    <h2 class="text-3xl font-bold text-blue-700 mt-1" id="readyRequestsCount">0</h2>
+                </div>
+                <div class="w-11 h-11 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-solid fa-box-open"></i>
+                </div>
+            </div>
+            <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-500">Completed</p>
+                    <h2 class="text-3xl font-bold text-emerald-600 mt-1" id="completedRequestsCount">0</h2>
+                </div>
+                <div class="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-regular fa-circle-check"></i>
+                </div>
+            </div>
+            <div class="dashboard-card bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-indigo-500">Upcoming Appointments</p>
+                    <h2 class="text-3xl font-bold text-indigo-700 mt-1" id="upcomingAppointmentsCount">0</h2>
+                </div>
+                <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-regular fa-calendar"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barangay Activity Charts -->
+        <div class="space-y-4">
+            <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                <i class="fa-solid fa-chart-column text-[#1e3a8a]"></i>
+                <span>Barangay Activity</span>
+            </h2>
+            <div id="activityCharts">
+                <!-- Loaded from the API -->
             </div>
         </div>
 
@@ -155,7 +190,9 @@
 
     </main>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="api-client.js"></script>
+    <script src="dashboard-charts.js"></script>
     <script>
         lucide.createIcons();
 
@@ -166,7 +203,28 @@
             renderProfile(session.user);
             loadProfile();
             loadRequests();
+            loadUpcomingAppointments();
+            loadActivity();
             loadAnnouncements();
+        }
+
+        async function loadUpcomingAppointments() {
+            try {
+                const appointments = await Api.get('resident', '/api/appointments/mine?upcoming=true');
+                document.getElementById('upcomingAppointmentsCount').innerText = appointments.length;
+            } catch (err) {
+                console.error('Could not load appointments:', err.message);
+            }
+        }
+
+        // Barangay-wide charts: bookings this month and the most requested documents.
+        async function loadActivity() {
+            const container = document.getElementById('activityCharts');
+            try {
+                DashboardCharts.render(container, await Api.get('resident', '/api/stats/overview'));
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+            }
         }
 
         async function loadProfile() {
@@ -229,7 +287,10 @@
             try {
                 const requests = await Api.get('resident', '/api/requests/mine');
                 document.getElementById('totalRequestsCount').innerText = requests.length;
-                document.getElementById('pendingRequestsCount').innerText = requests.filter(r => r.status === 'Pending').length;
+                const count = (status) => requests.filter(r => r.status === status).length;
+                document.getElementById('pendingRequestsCount').innerText = count('Pending');
+                document.getElementById('readyRequestsCount').innerText = count('Ready for Pickup');
+                document.getElementById('completedRequestsCount').innerText = count('Completed');
 
                 if (requests.length === 0) {
                     container.innerHTML = `

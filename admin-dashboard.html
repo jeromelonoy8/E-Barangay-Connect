@@ -73,7 +73,7 @@
         </div>
 
         <!-- Metric Stat Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 shadow-sm">
                 <div class="flex items-center justify-between text-[#1e3a8a] mb-3">
                     <i class="fa-regular fa-file-lines text-lg"></i>
@@ -105,6 +105,28 @@
                 <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rejected Requests</p>
                 <h2 class="text-3xl font-bold text-red-600 mt-1" id="statRejectedRequests">0</h2>
             </div>
+
+            <div class="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 shadow-sm">
+                <div class="flex items-center justify-between text-indigo-600 mb-3">
+                    <i class="fa-regular fa-calendar-check text-lg"></i>
+                </div>
+                <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Bookings This Month</p>
+                <h2 class="text-3xl font-bold text-indigo-700 mt-1" id="statBookingsMonth">0</h2>
+                <p class="text-[11px] text-slate-400 font-medium mt-0.5" id="statBookingsResidents"></p>
+            </div>
+
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between text-slate-600 mb-3">
+                    <i class="fa-solid fa-users text-lg"></i>
+                </div>
+                <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Registered Residents</p>
+                <h2 class="text-3xl font-bold text-slate-900 mt-1" id="statResidents">0</h2>
+            </div>
+        </div>
+
+        <!-- Barangay Activity Charts -->
+        <div id="activityCharts">
+            <!-- Loaded from the API -->
         </div>
 
         <!-- Dashboard Split Grid -->
@@ -231,7 +253,9 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="api-client.js"></script>
+    <script src="dashboard-charts.js"></script>
     <script>
         const session = Api.requireSession('admin');
 
@@ -241,7 +265,22 @@
             Api.setupAdminNav({ onProfileUpdated: loadOfficialsData });
             hideAdminOnlyLinks();
             loadDashboardData();
+            loadActivity();
             loadOfficialsData();
+        }
+
+        // Bookings this month (cards + chart) and the most requested documents.
+        async function loadActivity() {
+            const container = document.getElementById('activityCharts');
+            try {
+                const overview = await Api.get('admin', '/api/stats/overview');
+                document.getElementById('statBookingsMonth').innerText = overview.bookings.total;
+                document.getElementById('statBookingsResidents').innerText =
+                    `${overview.bookings.residents} resident${overview.bookings.residents === 1 ? '' : 's'} · ${overview.month_label}`;
+                DashboardCharts.render(container, overview);
+            } catch (err) {
+                container.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
+            }
         }
 
         function isAdmin() {
@@ -270,6 +309,7 @@
             document.getElementById('statApprovedRequests').innerText =
                 (byStatus['Approved'] || 0) + (byStatus['Ready for Pickup'] || 0) + (byStatus['Completed'] || 0);
             document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || 0;
+            document.getElementById('statResidents').innerText = stats.residents;
 
             if (stats.recent_requests.length === 0) {
                 recentContainer.innerHTML = `
