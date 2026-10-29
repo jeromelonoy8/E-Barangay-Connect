@@ -2,6 +2,8 @@ const { pool } = require('./db');
 
 async function seed() {
   try {
+    console.log(' Starting database seeding process...');
+
     const sql = `
       INSERT INTO requests (id, full_name, document_type, purpose, status, date_submitted) VALUES
       ('REQ-1001', 'Juan Dela Cruz', 'Barangay Clearance', 'Employment', 'PENDING', '2026-10-01'),
@@ -108,9 +110,13 @@ async function seed() {
     `;
 
     await pool.query(sql);
-    console.log('Successfully seeded 100 mock requests!');
+
+    // I-check kung pila gyud tanan ka requests ang naa na sa database
+    const [rows] = await pool.query('SELECT COUNT(*) as total FROM requests');
+    console.log(` Successfully seeded database! Current total requests: ${rows[0].total}`);
+
   } catch (err) {
-    console.error('Error seeding database:', err.message);
+    console.error(' Error seeding database:', err.message);
   }
 }
 
