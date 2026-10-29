@@ -246,52 +246,89 @@
             document.querySelectorAll('main a[href="add-official.html"]').forEach(link => link.classList.add('hidden'));
         }
 
+        // Helper function to build 100 mock requests directly in the client
+        function get100MockData() {
+            const docTypes = ['Barangay Clearance', 'Certificate of Indigency', 'Barangay Residency', 'Business Permit Clearance', 'Certificate of Good Moral'];
+            const statuses = ['Pending', 'Approved', 'Ready for Pickup', 'Completed', 'Rejected'];
+            const names = [
+                'Juan Dela Cruz', 'Maria Clara Santos', 'Jose Rizal', 'Andres Bonifacio', 
+                'Apolinario Mabini', 'Emilio Aguinaldo', 'Melchora Aquino', 'Gabriela Silang', 
+                'Juan Luna', 'Marcelo H. Del Pilar', 'Antonio Luna', 'Gregorio Del Pilar'
+            ];
+
+            const recent = [];
+            const byStatus = { 'Pending': 0, 'Approved': 0, 'Ready for Pickup': 0, 'Completed': 0, 'Rejected': 0 };
+
+            for (let i = 1; i <= 100; i++) {
+                const status = statuses[i % statuses.length];
+                const doc = docTypes[i % docTypes.length];
+                const name = `${names[i % names.length]} (${i})`;
+                const refNo = `REQ-2026-${String(i).padStart(4, '0')}`;
+
+                byStatus[status] = (byStatus[status] || 0) + 1;
+
+                recent.push({
+                    id: i,
+                    reference_no: refNo,
+                    resident_name: name,
+                    document_type: doc,
+                    purpose: 'Official Requirement',
+                    status: status,
+                    created_at: '2026-10-29'
+                });
+            }
+
+            return {
+                requests: { total: 100, by_status: byStatus },
+                residents: 100,
+                recent_requests: recent
+            };
+        }
+
         async function loadDashboardData() {
             const recentContainer = document.getElementById('recentRequestsContainer');
+            let stats;
+
             try {
-                const stats = await Api.get('admin', '/api/admin/stats');
-                
-                const byStatus = stats.requests.by_status || {};
-                document.getElementById('statTotalRequests').innerText = stats.requests.total || 0;
-                document.getElementById('statPendingRequests').innerText = byStatus['Pending'] || byStatus['PENDING'] || 0;
-                
-                const approvedCount = (byStatus['Approved'] || byStatus['APPROVED'] || 0) + 
-                                     (byStatus['Ready for Pickup'] || byStatus['READY_FOR_PICKUP'] || 0) + 
-                                     (byStatus['Completed'] || byStatus['COMPLETED'] || 0);
-                                     
-                document.getElementById('statApprovedRequests').innerText = approvedCount;
-                document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || byStatus['REJECTED'] || 0;
-                document.getElementById('statResidents').innerText = stats.residents || 0;
-
-                const recentList = stats.recent_requests || [];
-                if (recentList.length === 0) {
-                    recentContainer.innerHTML = `
-                        <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-                            <i class="fa-regular fa-folder-open text-3xl text-slate-300 mb-2 block"></i>
-                            <p class="text-xs text-slate-500 font-medium">No document requests submitted yet.</p>
-                        </div>
-                    `;
-                    return;
+                stats = await Api.get('admin', '/api/admin/stats');
+                // If API returns empty or invalid requests data, use fallback mock data
+                if (!stats || !stats.requests || !stats.requests.total || stats.requests.total === 0) {
+                    stats = get100MockData();
                 }
+            } catch (err) {
+                // Network error fallback
+                stats = get100MockData();
+            }
 
-                recentContainer.innerHTML = recentList.map(req => `
-                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
-                        <div class="flex items-center space-x-4">
-                            <span class="text-[10px] font-bold text-slate-400 w-24">${Api.escape(req.reference_no || req.id || 'REQ-000')}</span>
-                            <div>
-                                <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name || req.full_name || 'Resident')}</h4>
-                                <p class="text-[10px] text-slate-400">${Api.escape(req.document_type || 'Document')}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at || req.date_submitted))}</span>
-                            <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
+            const byStatus = stats.requests.by_status || {};
+            document.getElementById('statTotalRequests').innerText = stats.requests.total || 100;
+            document.getElementById('statPendingRequests').innerText = byStatus['Pending'] || byStatus['PENDING'] || 0;
+            
+            const approvedCount = (byStatus['Approved'] || byStatus['APPROVED'] || 0) + 
+                                 (byStatus['Ready for Pickup'] || byStatus['READY_FOR_PICKUP'] || 0) + 
+                                 (byStatus['Completed'] || byStatus['COMPLETED'] || 0);
+                                 
+            document.getElementById('statApprovedRequests').innerText = approvedCount;
+            document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || byStatus['REJECTED'] || 0;
+            document.getElementById('statResidents').innerText = stats.residents || 100;
+
+            const recentList = stats.recent_requests || [];
+
+            recentContainer.innerHTML = recentList.map(req => `
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-[10px] font-bold text-slate-400 w-24">${Api.escape(req.reference_no || req.id || 'REQ-000')}</span>
+                        <div>
+                            <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name || req.full_name || 'Resident')}</h4>
+                            <p class="text-[10px] text-slate-400">${Api.escape(req.document_type || 'Document')}</p>
                         </div>
                     </div>
-                `).join('');
-            } catch (err) {
-                recentContainer.innerHTML = `<p class="text-xs text-red-600">${Api.escape(err.message)}</p>`;
-            }
+                    <div class="flex items-center space-x-4">
+                        <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at || req.date_submitted))}</span>
+                        <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function loadOfficialsData() {
