@@ -1,8 +1,6 @@
 // Shared helpers every page uses to talk to the E-Barangay Connect API (loaded as api-client.js).
-// Residents and officials keep separate sessions, so both portals can be open in one browser.
 (function () {
     const isLocal = ['localhost', '127.0.0.1'].includes(location.hostname) || location.protocol === 'file:';
-    // Local copies use the local API; deployed pages (hosted on Vercel) use the Render backend.
     const API_BASE = isLocal ? 'http://localhost:5000' : 'https://e-barangay-connect.onrender.com';
 
     const PORTALS = {
