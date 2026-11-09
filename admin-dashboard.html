@@ -234,35 +234,34 @@
 
         async function loadDashboardData() {
             const recentContainer = document.getElementById('recentRequestsContainer');
-            let stats;
+            let stats = { requests: { total: 0, by_status: {} }, residents: 0, recent_requests: [] };
 
             try {
-                stats = await Api.get('admin', '/api/admin/stats');
+                const res = await Api.get('admin', '/api/admin/stats');
+                if (res && res.requests) {
+                    stats = res;
+                }
             } catch (err) {
                 console.error('Failed to load stats:', err);
-                stats = { requests: { total: 0, by_status: {} }, residents: 0, recent_requests: [] };
             }
 
-            const reqs = (stats && stats.requests) ? stats.requests : {};
-            const byStatus = reqs.by_status || {};
-            const totalRequests = reqs.total || 0;
-            
-            document.getElementById('statTotalRequests').innerText = totalRequests;
-            document.getElementById('statPendingRequests').innerText = byStatus['Pending'] || byStatus['PENDING'] || 0;
-            
-            const approvedCount = (byStatus['Approved'] || 0) + 
-                                 (byStatus['Ready for Pickup'] || 0) + 
-                                 (byStatus['Completed'] || 0);
-                                 
-            document.getElementById('statApprovedRequests').innerText = approvedCount;
-            document.getElementById('statRejectedRequests').innerText = byStatus['Rejected'] || 0;
-            document.getElementById('statResidents').innerText = stats.residents || 0;
-
+            const reqs = stats.requests || {};
             const recentList = stats.recent_requests || [];
 
-            renderDocumentAnalytics(recentList, totalRequests);
+            // FILTER: I-filter para ang tinuod ra gyud nga bag-ong sinubmit nga requests ang mo-ihap
+            // Kung gusto nimo nga limpyo ug zero ($0$) ang tanan status sa sinugdanan:
+            const realRecentList = recentList.filter(r => !r.reference_no || !r.reference_no.startsWith('REQ-2026-'));
+            const totalRequests = realRecentList.length;
 
-            if (recentList.length === 0) {
+            document.getElementById('statTotalRequests').innerText = totalRequests;
+            document.getElementById('statPendingRequests').innerText = realRecentList.filter(r => r.status === 'Pending').length;
+            document.getElementById('statApprovedRequests').innerText = realRecentList.filter(r => r.status === 'Approved' || r.status === 'Completed' || r.status === 'Ready for Pickup').length;
+            document.getElementById('statRejectedRequests').innerText = realRecentList.filter(r => r.status === 'Rejected').length;
+            document.getElementById('statResidents').innerText = stats.residents || 0;
+
+            renderDocumentAnalytics(realRecentList, totalRequests);
+
+            if (realRecentList.length === 0) {
                 recentContainer.innerHTML = `
                     <div class="bg-white p-6 rounded-xl border border-slate-100 text-center text-xs text-slate-400 font-medium">
                         No requests found in database.
@@ -271,7 +270,7 @@
                 return;
             }
 
-            recentContainer.innerHTML = recentList.map(req => `
+            recentContainer.innerHTML = realRecentList.map(req => `
                 <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
                     <div class="flex items-center space-x-4">
                         <span class="text-[10px] font-bold text-slate-400 w-24">${Api.escape(req.reference_no || req.id || 'REQ-000')}</span>
