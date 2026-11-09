@@ -128,7 +128,6 @@
         <div id="activityCharts" class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
             <h3 class="text-base font-bold text-slate-900 mb-1">Most Requested Documents</h3>
             <p id="activitySubtitle" class="text-xs text-slate-400 mb-6">Distribution of total document requests submitted</p>
-            
             <div id="analyticsBarsContainer" class="space-y-4 max-w-2xl"></div>
         </div>
 
@@ -244,7 +243,7 @@
                 stats = { requests: { total: 0, by_status: {} }, residents: 0, recent_requests: [] };
             }
 
-            const reqs = stats.requests || {};
+            const reqs = (stats && stats.requests) ? stats.requests : {};
             const byStatus = reqs.by_status || {};
             const totalRequests = reqs.total || 0;
             
@@ -295,6 +294,7 @@
             if (!container) return;
 
             const baseTotal = totalCount || requestsList.length || 0;
+
             if (subtitle) {
                 subtitle.innerText = `Distribution of ${baseTotal} total document request${baseTotal === 1 ? '' : 's'} submitted`;
             }
@@ -338,7 +338,7 @@
                 const me = Api.session('admin').user || {};
                 document.getElementById('officialsCountBadge').innerText = officials.length || 0;
                 
-                if (officials.length === 0) {
+                if (!officials || officials.length === 0) {
                     container.innerHTML = `<p class="text-xs text-slate-400">No officials data available.</p>`;
                     return;
                 }
