@@ -233,59 +233,61 @@
         }
 
         async function loadDashboardData() {
-            const recentContainer = document.getElementById('recentRequestsContainer');
-            let stats = { requests: { total: 0, by_status: {} }, residents: 0, recent_requests: [] };
+    const recentContainer = document.getElementById('recentRequestsContainer');
+    let requestsList = [];
 
-            try {
-                const res = await Api.get('admin', '/api/admin/stats');
-                if (res && res.requests) {
-                    stats = res;
-                }
-            } catch (err) {
-                console.error('Failed to load stats:', err);
-            }
+    try {
+        // Fetch ALL requests directly from the endpoint without status exclusions
+        const data = await Api.get('admin', '/api/requests');
+        requestsList = Array.isArray(data) ? data : (data.requests || []);
+    } catch (err) {
+        console.error('Failed to load database requests:', err);
+    }
 
-            const reqs = stats.requests || {};
-            const recentList = stats.recent_requests || [];
+    // Exact count matching (ALL requests including Pending, Approved, Completed, Rejected, Cancelled)
+    const totalRequests = requestsList.length;
+    const pendingCount = requestsList.filter(r => r.status === 'Pending').length;
+    const approvedCount = requestsList.filter(r => r.status === 'Approved' || r.status === 'Ready for Pickup' || r.status === 'Completed').length;
+    const rejectedCount = requestsList.filter(r => r.status === 'Rejected' || r.status === 'Cancelled').length;
 
-            // FILTER: I-filter para ang tinuod ra gyud nga bag-ong sinubmit nga requests ang mo-ihap
-            // Kung gusto nimo nga limpyo ug zero ($0$) ang tanan status sa sinugdanan:
-            const realRecentList = recentList.filter(r => !r.reference_no || !r.reference_no.startsWith('REQ-2026-'));
-            const totalRequests = realRecentList.length;
+    document.getElementById('statTotalRequests').innerText = totalRequests;
+    document.getElementById('statPendingRequests').innerText = pendingCount;
+    document.getElementById('statApprovedRequests').innerText = approvedCount;
+    document.getElementById('statRejectedRequests').innerText = rejectedCount;
 
-            document.getElementById('statTotalRequests').innerText = totalRequests;
-            document.getElementById('statPendingRequests').innerText = realRecentList.filter(r => r.status === 'Pending').length;
-            document.getElementById('statApprovedRequests').innerText = realRecentList.filter(r => r.status === 'Approved' || r.status === 'Completed' || r.status === 'Ready for Pickup').length;
-            document.getElementById('statRejectedRequests').innerText = realRecentList.filter(r => r.status === 'Rejected').length;
-            document.getElementById('statResidents').innerText = stats.residents || 0;
+    // Fetch resident stats
+    try {
+        const stats = await Api.get('admin', '/api/admin/stats');
+        document.getElementById('statResidents').innerText = stats.residents || 0;
+    } catch (e) {}
 
-            renderDocumentAnalytics(realRecentList, totalRequests);
+    renderDocumentAnalytics(requestsList, totalRequests);
 
-            if (realRecentList.length === 0) {
-                recentContainer.innerHTML = `
-                    <div class="bg-white p-6 rounded-xl border border-slate-100 text-center text-xs text-slate-400 font-medium">
-                        No requests found in database.
-                    </div>
-                `;
-                return;
-            }
+    if (totalRequests === 0) {
+        recentContainer.innerHTML = `
+            <div class="bg-white p-6 rounded-xl border border-slate-100 text-center text-xs text-slate-400 font-medium">
+                No requests found in database.
+            </div>
+        `;
+        return;
+    }
 
-            recentContainer.innerHTML = realRecentList.map(req => `
-                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-[10px] font-bold text-slate-400 w-24">${Api.escape(req.reference_no || req.id || 'REQ-000')}</span>
-                        <div>
-                            <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name || req.full_name || 'Resident')}</h4>
-                            <p class="text-[10px] text-slate-400">${Api.escape(req.document_type || 'Document')}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at || req.date_submitted))}</span>
-                        <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
-                    </div>
+    recentContainer.innerHTML = requestsList.slice(0, 5).map(req => `
+        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between text-xs">
+            <div class="flex items-center space-x-4">
+                <span class="text-[10px] font-bold text-slate-400 w-24">${Api.escape(req.reference_no || `REQ-${req.id}`)}</span>
+                <div>
+                    <h4 class="font-bold text-slate-900">${Api.escape(req.resident_name || req.full_name || 'Resident')}</h4>
+                    <p class="text-[10px] text-slate-400">${Api.escape(req.document_type || 'Document')}</p>
                 </div>
-            `).join('');
-        }
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-slate-400 font-medium text-[11px]">${Api.escape(Api.formatDate(req.created_at || req.date_submitted))}</span>
+                <span class="text-[10px] font-bold px-3 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
+            </div>
+        </div>
+    `).join('');
+}
 
         function renderDocumentAnalytics(requestsList, totalCount) {
             const container = document.getElementById('analyticsBarsContainer');
