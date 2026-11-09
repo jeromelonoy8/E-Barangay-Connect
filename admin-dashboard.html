@@ -127,7 +127,8 @@
         <!-- Barangay Activity Charts Section -->
         <div id="activityCharts" class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
             <h3 class="text-base font-bold text-slate-900 mb-1">Most Requested Documents</h3>
-            <p class="text-xs text-slate-400 mb-6">Distribution of total document requests submitted</p>
+            <p id="activitySubtitle" class="text-xs text-slate-400 mb-6">Distribution of total document requests submitted</p>
+            
             <div id="analyticsBarsContainer" class="space-y-4 max-w-2xl"></div>
         </div>
 
@@ -260,7 +261,6 @@
 
             const recentList = stats.recent_requests || [];
 
-            // Compute dynamic analytics for document categories
             renderDocumentAnalytics(recentList, totalRequests);
 
             if (recentList.length === 0) {
@@ -291,7 +291,13 @@
 
         function renderDocumentAnalytics(requestsList, totalCount) {
             const container = document.getElementById('analyticsBarsContainer');
+            const subtitle = document.getElementById('activitySubtitle');
             if (!container) return;
+
+            const baseTotal = totalCount || requestsList.length || 0;
+            if (subtitle) {
+                subtitle.innerText = `Distribution of ${baseTotal} total document request${baseTotal === 1 ? '' : 's'} submitted`;
+            }
 
             const docCounts = {};
             requestsList.forEach(req => {
@@ -306,8 +312,6 @@
                 { name: 'Business Permit Clearance', color: 'bg-sky-500' },
                 { name: 'Certificate of Good Moral', color: 'bg-teal-500' }
             ];
-
-            const baseTotal = totalCount || requestsList.length || 0;
 
             container.innerHTML = categories.map(cat => {
                 const count = docCounts[cat.name] || 0;
