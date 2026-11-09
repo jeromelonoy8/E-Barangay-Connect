@@ -18,50 +18,6 @@
         }
     }
 
-    // Helper to generate 100 mock requests as a front-end fallback
-    function generate100MockStats() {
-        const docTypes = ['Barangay Clearance', 'Certificate of Indigency', 'Barangay Residency', 'Business Permit Clearance', 'Certificate of Good Moral'];
-        const statuses = ['Pending', 'Approved', 'Ready for Pickup', 'Completed', 'Rejected'];
-        const names = [
-            'Juan Dela Cruz', 'Maria Clara Santos', 'Jose Rizal', 'Andres Bonifacio', 
-            'Apolinario Mabini', 'Emilio Aguinaldo', 'Melchora Aquino', 'Gabriela Silang', 
-            'Juan Luna', 'Marcelo H. Del Pilar', 'Antonio Luna', 'Gregorio Del Pilar'
-        ];
-
-        const recent_requests = [];
-        const by_status = { 'Pending': 0, 'Approved': 0, 'Ready for Pickup': 0, 'Completed': 0, 'Rejected': 0 };
-
-        for (let i = 1; i <= 100; i++) {
-            const status = statuses[i % statuses.length];
-            const doc = docTypes[i % docTypes.length];
-            const name = `${names[i % names.length]} (${i})`;
-            const refNo = `REQ-2026-${String(i).padStart(4, '0')}`;
-
-            by_status[status] = (by_status[status] || 0) + 1;
-
-            recent_requests.push({
-                id: i,
-                reference_no: refNo,
-                resident_name: name,
-                full_name: name,
-                document_type: doc,
-                purpose: 'Official Requirement',
-                status: status,
-                created_at: '2026-10-29',
-                date_submitted: '2026-10-29'
-            });
-        }
-
-        return {
-            requests: {
-                total: 100,
-                by_status: by_status
-            },
-            residents: 100,
-            recent_requests: recent_requests
-        };
-    }
-
     const Api = {
         base: API_BASE,
 
@@ -116,21 +72,10 @@
             try {
                 res = await fetch(API_BASE + path, { method, headers, body });
             } catch (e) {
-                // If fetching stats fails due to network or server down, provide mock stats fallback
-                if (path.includes('/api/admin/stats')) {
-                    return generate100MockStats();
-                }
                 throw new Error('Cannot connect to the server. Please check your connection and try again.');
             }
 
             const data = await res.json().catch(() => ({}));
-
-            // Fallback check if server returns empty or non-100 data for stats
-            if (path.includes('/api/admin/stats')) {
-                if (!res.ok || !data.requests || data.requests.total < 100) {
-                    return generate100MockStats();
-                }
-            }
 
             if (res.status === 401 && portal && token) {
                 Api.clearSession(portal);
