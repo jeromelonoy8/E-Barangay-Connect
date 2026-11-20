@@ -52,7 +52,7 @@ describe('static files', () => {
         assert.equal((await api('GET', '/api-client.js')).status, 200);
         assert.equal((await api('GET', '/appointment-page.js')).status, 200);
         assert.equal((await api('GET', '/chatbot-widget.js')).status, 200);
-        assert.equal((await api('GET', '/manage-appointments.html')).status, 200);
+        assert.equal((await api('GET', '/manage-appointments.html')).status, 404);
     });
 
     test('server code, SQL, config and subfolders are not served', async () => {
@@ -357,6 +357,10 @@ describe('appointments', () => {
         assert.match(first.data.appointment.reference_no, /^APT-\d{4}$/);
         assert.equal(first.data.appointment.status, 'Pending');
         assert.equal(first.data.appointment.time_slot, null);
+
+        const byReference = await api('GET', `/api/appointments?search=${first.data.appointment.reference_no}`, { token: tokens.admin });
+        assert.equal(byReference.data.length, 1);
+        assert.equal(byReference.data[0].appointment_id, first.data.appointment.appointment_id);
 
         const dup = await api('POST', '/api/appointments', { token: tokens.juan, json: { purpose: 'Consultation', date: monday } });
         assert.equal(dup.status, 409);

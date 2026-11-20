@@ -180,7 +180,7 @@ in the appointment notification.
 | GET | `/appointments/mine` | resident | Add `?upcoming=true` for pending or confirmed appointments from today onward |
 | PATCH | `/appointments/:id/cancel` | owner | Only when `Pending` or `Confirmed` |
 | GET | `/appointments/:id` | owner or staff | |
-| GET | `/appointments` | staff | Filters: `date`, `from`, `to`, `status`, `search` |
+| GET | `/appointments` | staff | Filters: `date`, `from`, `to`, `status`, `search`; displayed with document requests in Manage Requests |
 | PATCH | `/appointments/:id/status` | staff | `{ "status": "Rejected", "rejection_reason": "..." }` for rejection; use `Confirmed` to approve |
 
 Appointment object: `appointment_id, reference_no, user_id, resident_name, resident_phone, request_id,

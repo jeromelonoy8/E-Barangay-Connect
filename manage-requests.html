@@ -32,10 +32,6 @@
                     <i class="fa-regular fa-file-lines text-xs"></i>
                     <span>Manage Requests</span>
                 </a>
-                <a href="manage-appointments.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
-                    <i class="fa-regular fa-calendar-check text-xs"></i>
-                    <span>Appointments</span>
-                </a>
                 <a href="announcements.html" class="flex items-center space-x-2 text-blue-100 hover:text-white transition">
                     <i class="fa-solid fa-bullhorn text-xs"></i>
                     <span>Announcements</span>
@@ -65,8 +61,8 @@
     <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
         <div class="flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-bold text-slate-900">Manage Document Requests</h1>
-                <p class="text-slate-500 text-xs mt-1">Review, approve, reject, and monitor resident clearance applications.</p>
+                <h1 class="text-3xl font-bold text-slate-900">Manage Requests</h1>
+                <p class="text-slate-500 text-xs mt-1">Review document requests and resident appointment bookings.</p>
             </div>
         </div>
 
@@ -76,20 +72,32 @@
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </span>
-                <input type="text" id="searchInput" onkeyup="filterRequests()" placeholder="Search resident name or ID..." 
+                <input type="text" id="searchInput" onkeyup="filterRequests()" placeholder="Search resident, purpose, or ID..." 
                     class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
             </div>
 
-            <div class="flex items-center space-x-3 w-full md:w-auto">
-                <label class="text-slate-500 font-semibold whitespace-nowrap">Filter Status:</label>
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <label class="text-slate-500 font-semibold whitespace-nowrap" for="statusFilter">Status:</label>
                 <select id="statusFilter" onchange="filterRequests()" class="w-full md:w-40 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition">
                     <option value="All">All Statuses</option>
                     <option value="Pending">Pending</option>
                     <option value="Approved">Approved</option>
+                    <option value="Confirmed">Confirmed</option>
                     <option value="Ready for Pickup">Ready for Pickup</option>
                     <option value="Completed">Completed</option>
                     <option value="Rejected">Rejected</option>
                     <option value="Cancelled">Cancelled</option>
+                    <option value="No Show">No Show</option>
+                </select>
+                <label class="text-slate-500 font-semibold whitespace-nowrap" for="recordTypeFilter">Type:</label>
+                <select id="recordTypeFilter" onchange="filterRequests()" class="w-full md:w-44 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition">
+                    <option value="All">All Requests</option>
+                    <option value="document">Document Requests</option>
+                    <option value="appointment">Appointment Bookings</option>
+                </select>
+                <label class="text-slate-500 font-semibold whitespace-nowrap" for="purposeFilter">Purpose:</label>
+                <select id="purposeFilter" onchange="filterRequests()" class="w-full md:w-52 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition">
+                    <option value="All">All Purposes</option>
                 </select>
             </div>
         </div>
@@ -100,10 +108,10 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 border-b border-slate-200 text-[11px] uppercase font-bold text-slate-500 tracking-wider">
-                            <th class="p-4">Request ID</th>
+                            <th class="p-4">Request / Booking ID</th>
                             <th class="p-4">Resident Name</th>
                             <th class="p-4">Document Type</th>
-                            <th class="p-4">Date Submitted</th>
+                            <th class="p-4">Request / Booking Date</th>
                             <th class="p-4">Status</th>
                             <th class="p-4 text-center">Actions</th>
                         </tr>
@@ -239,7 +247,25 @@
             ]
         };
 
+        const APPOINTMENT_NEXT_STEPS = {
+            Pending: [
+                { status: 'Confirmed', label: 'Approve', classes: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200', solid: 'bg-emerald-600 hover:bg-emerald-700' },
+                { status: 'Rejected', label: 'Reject', classes: 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200', solid: 'bg-rose-600 hover:bg-rose-700' }
+            ],
+            Confirmed: [
+                { status: 'Completed', label: 'Mark Completed', classes: 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200', solid: 'bg-blue-600 hover:bg-blue-700' },
+                { status: 'No Show', label: 'Mark No Show', classes: 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300', solid: 'bg-slate-700 hover:bg-slate-800' }
+            ]
+        };
+
         let searchTimer = null;
+        const knownPurposes = new Set([
+            'Document Pickup (Barangay Clearance / Residency)',
+            'In-person Consultation / Filing',
+            'Barangay Lupon / Mediation Hearing',
+            'Senior Citizen Services / Assistance',
+            'Other Official Business'
+        ]);
 
         if (session) {
             Api.setupAdminNav();
@@ -251,23 +277,61 @@
             const params = new URLSearchParams();
             const search = document.getElementById('searchInput').value.trim();
             const status = document.getElementById('statusFilter').value;
+            const recordType = document.getElementById('recordTypeFilter').value;
             if (search) params.set('search', search);
             if (status !== 'All') params.set('status', status);
 
             try {
-                const res = await Api.get('admin', `/api/requests?${params}`);
-                const data = Array.isArray(res) ? res : (res.requests || []);
-                // Filter out any hardcoded fallback items
-                const realRequests = data.filter(r => !r.reference_no || !r.reference_no.startsWith('REQ-2026-'));
-                renderRequests(realRequests);
+                const [documentData, appointmentData] = await Promise.all([
+                    recordType === 'appointment' ? Promise.resolve([]) : Api.get('admin', `/api/requests?${params}`),
+                    recordType === 'document' ? Promise.resolve([]) : Api.get('admin', `/api/appointments?${params}`)
+                ]);
+                const documents = (Array.isArray(documentData) ? documentData : (documentData.requests || []))
+                    .filter(request => !request.reference_no || !request.reference_no.startsWith('REQ-2026-'))
+                    .map(request => ({ ...request, record_type: 'document' }));
+                const appointments = (Array.isArray(appointmentData) ? appointmentData : (appointmentData.appointments || []))
+                    .map(appointment => ({
+                        ...appointment,
+                        record_type: 'appointment',
+                        created_at: appointment.created_at || appointment.date,
+                        file_count: 0
+                    }));
+                const records = [...documents, ...appointments].sort((a, b) =>
+                    new Date(b.created_at || b.date) - new Date(a.created_at || a.date)
+                );
+                records.forEach(record => {
+                    if (record.purpose) knownPurposes.add(record.purpose);
+                });
+                updatePurposeFilterOptions();
+                const purpose = document.getElementById('purposeFilter').value;
+                renderRequests(records.filter(record => purpose === 'All' || record.purpose === purpose));
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-600">${Api.escape(err.message)}</td></tr>`;
             }
         }
 
+        function updatePurposeFilterOptions() {
+            const select = document.getElementById('purposeFilter');
+            const selectedPurpose = select.value;
+            const purposes = [...knownPurposes].sort((a, b) => a.localeCompare(b));
+            select.innerHTML = '<option value="All">All Purposes</option>' +
+                purposes.map(purpose => `<option value="${Api.escape(purpose)}">${Api.escape(purpose)}</option>`).join('');
+            if (knownPurposes.has(selectedPurpose)) select.value = selectedPurpose;
+        }
+
         function filterRequests() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(loadRequestsTable, 300);
+        }
+
+        function recordId(record) {
+            return record.record_type === 'appointment' ? record.appointment_id : record.request_id;
+        }
+
+        function recordSteps(record) {
+            return record.record_type === 'appointment'
+                ? (APPOINTMENT_NEXT_STEPS[record.status] || [])
+                : (NEXT_STEPS[record.status] || []);
         }
 
         function renderRequests(requests) {
@@ -277,7 +341,7 @@
                     <tr>
                         <td colspan="6" class="text-center py-12 text-slate-400">
                             <i class="fa-regular fa-folder-open text-3xl mb-2 block"></i>
-                            <span>No matching document requests found.</span>
+                            <span>No matching requests or appointment bookings found.</span>
                         </td>
                     </tr>
                 `;
@@ -286,19 +350,23 @@
 
             tbody.innerHTML = requests.map(req => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-4 font-bold text-slate-700">${Api.escape(req.reference_no || `REQ-${String(req.request_id || req.id).padStart(4, '0')}`)}</td>
+                    <td class="p-4 font-bold text-slate-700">${Api.escape(req.reference_no)}</td>
                     <td class="p-4 font-semibold text-slate-900">${Api.escape(req.resident_name || req.full_name || 'Resident')}</td>
-                    <td class="p-4 text-slate-600">${Api.escape(req.document_type || 'Document')}</td>
-                    <td class="p-4 text-slate-500">${Api.escape(Api.formatDate(req.created_at || req.date_submitted))}</td>
+                    <td class="p-4 text-slate-600">
+                        ${req.record_type === 'appointment'
+                            ? `<div class="font-semibold">Appointment Booking</div><div class="text-slate-500">${Api.escape(req.purpose || 'Purpose not specified')}</div>`
+                            : Api.escape(req.document_type || 'Document')}
+                    </td>
+                    <td class="p-4 text-slate-500">${Api.escape(Api.formatDate(req.record_type === 'appointment' ? req.date : req.created_at || req.date_submitted))}</td>
                     <td class="p-4">
                         <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>
                     </td>
                     <td class="p-4 text-center space-x-1 whitespace-nowrap">
-                        <button onclick="viewRequestDetails(${req.request_id || req.id})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
+                        <button onclick="viewRequestDetails(${recordId(req)}, '${req.record_type}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] transition">
                             View${req.file_count ? ` (${req.file_count} file${req.file_count === 1 ? '' : 's'})` : ''}
                         </button>
-                        ${(NEXT_STEPS[req.status] || []).map(step => `
-                            <button onclick="updateStatus(${req.request_id || req.id}, '${step.status}')" class="${step.classes} font-bold px-2.5 py-1 rounded-lg border text-[11px] transition">
+                        ${recordSteps(req).map(step => `
+                            <button onclick="updateStatus(${recordId(req)}, '${step.status}', false, '${req.record_type}')" class="${step.classes} font-bold px-2.5 py-1 rounded-lg border text-[11px] transition">
                                 ${step.label}
                             </button>
                         `).join('')}
@@ -330,7 +398,7 @@
                 </div>`;
         }
 
-        async function viewRequestDetails(id) {
+        async function viewRequestDetails(id, recordType) {
             const modalBody = document.getElementById('detailsModalBody');
             const modalActions = document.getElementById('detailsModalActions');
             modalBody.innerHTML = '<p class="text-slate-500 text-center py-6">Loading request...</p>';
@@ -339,13 +407,26 @@
 
             let req;
             try {
-                req = await Api.get('admin', `/api/requests/${id}`);
+                req = await Api.get('admin', recordType === 'appointment' ? `/api/appointments/${id}` : `/api/requests/${id}`);
             } catch (err) {
                 modalBody.innerHTML = `<p class="text-red-600 text-center py-6">${Api.escape(err.message)}</p>`;
                 return;
             }
 
-            modalBody.innerHTML = `
+            if (recordType === 'appointment') {
+                modalBody.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        ${detail('Booking ID', `<span class="font-bold">${Api.escape(req.reference_no)}</span>`)}
+                        ${detail('Status', `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>`)}
+                        ${detail('Resident Name', Api.escape(req.resident_name || req.resident_username || 'Resident'))}
+                        ${detail('Contact Number', Api.escape(req.resident_phone || 'N/A'))}
+                        ${detail('Purpose', Api.escape(req.purpose || 'Not specified'), true)}
+                        ${detail('Appointment Date', Api.escape(Api.formatDate(req.date)), true)}
+                        ${req.rejection_reason ? `<div class="col-span-2 bg-red-50 p-2.5 rounded-xl border border-red-200"><span class="block text-red-600 font-semibold uppercase text-[10px]">Rejection Reason</span><span class="text-red-800 font-medium">${Api.escape(req.rejection_reason)}</span></div>` : ''}
+                    </div>
+                `;
+            } else {
+                modalBody.innerHTML = `
                 <div class="grid grid-cols-2 gap-3">
                     ${detail('Request ID', `<span class="font-bold">${Api.escape(req.reference_no || `REQ-${req.id}`)}</span>`)}
                     ${detail('Status', `<span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${Api.statusBadge(req.status)}">${Api.escape(req.status)}</span>`)}
@@ -367,12 +448,14 @@
                         ${(req.files && req.files.length) ? req.files.map(filePreview).join('') : '<span class="text-slate-400 italic">No file attached</span>'}
                     </div>
                 </div>
-            `;
+                `;
+            }
 
+            const steps = recordSteps({ ...req, record_type: recordType });
             modalActions.innerHTML = `
                 <button onclick="closeDetailsModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition">Close</button>
-                ${(NEXT_STEPS[req.status] || []).map(step => `
-                    <button onclick="updateStatus(${req.request_id || req.id}, '${step.status}', true)" class="${step.solid} text-white font-bold px-4 py-2 rounded-xl text-xs transition">${step.label}</button>
+                ${steps.map(step => `
+                    <button onclick="updateStatus(${recordType === 'appointment' ? req.appointment_id : req.request_id || req.id}, '${step.status}', true, '${recordType}')" class="${step.solid} text-white font-bold px-4 py-2 rounded-xl text-xs transition">${step.label}</button>
                 `).join('')}
             `;
         }
@@ -381,7 +464,7 @@
             document.getElementById('requestDetailsModal').classList.add('hidden');
         }
 
-        async function updateStatus(id, newStatus, fromModal) {
+        async function updateStatus(id, newStatus, fromModal, recordType = 'document') {
             let rejectionReason;
             if (newStatus === 'Rejected') {
                 rejectionReason = prompt('Please enter the reason for rejecting this request:');
@@ -393,7 +476,10 @@
             }
 
             try {
-                await Api.request('admin', 'PATCH', `/api/requests/${id}/status`, {
+                const path = recordType === 'appointment'
+                    ? `/api/appointments/${id}/status`
+                    : `/api/requests/${id}/status`;
+                await Api.request('admin', 'PATCH', path, {
                     json: { status: newStatus, rejection_reason: rejectionReason }
                 });
                 if (fromModal) closeDetailsModal();

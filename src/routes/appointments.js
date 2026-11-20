@@ -277,9 +277,12 @@ router.get('/', requireStaff, async (req, res) => {
         params.push(req.query.status);
     }
     if (req.query.search) {
-        const like = `%${String(req.query.search).trim()}%`;
-        where.push('(u.full_name LIKE ? OR u.username LIKE ? OR a.purpose LIKE ?)');
+        const term = String(req.query.search).trim();
+        const idMatch = term.match(/^(?:APT-)?0*(\d+)$/i);
+        const like = `%${term}%`;
+        where.push(`(u.full_name LIKE ? OR u.username LIKE ? OR a.purpose LIKE ?${idMatch ? ' OR a.appointment_id = ?' : ''})`);
         params.push(like, like, like);
+        if (idMatch) params.push(Number(idMatch[1]));
     }
 
     const rows = await db.query(
