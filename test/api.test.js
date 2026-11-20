@@ -12,7 +12,7 @@ const SETTINGS = {
     appointment_time_slots: ['08:00 AM - 09:00 AM', '09:00 AM - 10:00 AM', '01:00 PM - 02:00 PM'],
     appointment_slot_capacity: 2,
     appointment_open_days: [1, 2, 3, 4, 5, 6],
-    appointment_purposes: ['Document Pickup', 'Consultation'],
+    appointment_purposes: ['Document Pickup', 'Consultation', 'In-person Consultation / Filing', 'Barangay Lupon / Mediation Hearing', 'Other Official Business'],
     announcement_categories: ['Community Event', 'Health Notice'],
     official_positions: ['Barangay Captain', 'Kagawad']
 };
@@ -49,6 +49,9 @@ describe('static files', () => {
         assert.equal((await api('GET', '/dashboard.html')).status, 200);
         assert.equal((await api('GET', '/styles.css')).status, 200);
         assert.equal((await api('GET', '/api-client.js')).status, 200);
+        assert.equal((await api('GET', '/appointment-page.js')).status, 200);
+        assert.equal((await api('GET', '/chatbot-widget.js')).status, 200);
+        assert.equal((await api('GET', '/manage-appointments.html')).status, 200);
     });
 
     test('server code, SQL, config and subfolders are not served', async () => {
@@ -307,6 +310,17 @@ describe('appointments', () => {
         assert.ok(res.data.slots.every(s => s.booked === 0 && s.available === 2));
     });
 
+    test('calendar and chatbot routes report missing server configuration without exposing credentials', async () => {
+        const calendar = await api('GET', '/api/appointments/calendar');
+        assert.equal(calendar.status, 503);
+        assert.match(calendar.data.error, /not configured/);
+
+        assert.equal((await api('POST', '/api/help/chat', { json: { message: 'How do I book?' } })).status, 401);
+        const chat = await api('POST', '/api/help/chat', { token: tokens.juan, json: { message: 'How do I book?' } });
+        assert.equal(chat.status, 503);
+        assert.match(chat.data.error, /not configured/);
+    });
+
     test('booking validates the date and time slot', async () => {
         const book = (json) => api('POST', '/api/appointments', { token: tokens.juan, json: { purpose: 'Document Pickup', time_slot: slot, ...json } });
         assert.equal((await book({ date: '2020-01-06' })).status, 400);
@@ -319,6 +333,7 @@ describe('appointments', () => {
         const first = await api('POST', '/api/appointments', { token: tokens.juan, json: { purpose: 'Document Pickup', date: monday, time_slot: slot } });
         assert.equal(first.status, 201, JSON.stringify(first.data));
         assert.match(first.data.appointment.reference_no, /^APT-\d{4}$/);
+        assert.equal(first.data.appointment.status, 'Pending');
 
         const dup = await api('POST', '/api/appointments', { token: tokens.juan, json: { purpose: 'Consultation', date: monday, time_slot: slot } });
         assert.equal(dup.status, 409);
@@ -338,7 +353,7 @@ describe('appointments', () => {
         ));
         assert.equal(results.filter(r => r.status === 201).length, 2);
         assert.ok(results.every(r => r.status === 201 || r.status === 409));
-        const [{ n }] = await db.query("SELECT COUNT(*) AS n FROM appointments WHERE scheduled_date = ? AND status = 'Confirmed'", [tuesday]);
+        const [{ n }] = await db.query("SELECT COUNT(*) AS n FROM appointments WHERE scheduled_date = ? AND status IN ('Pending', 'Confirmed')", [tuesday]);
         assert.equal(Number(n), 2);
     });
 
@@ -352,14 +367,34 @@ describe('appointments', () => {
         assert.equal(pedro.status, 201);
     });
 
-    test('staff see all appointments and can update their status', async () => {
-        const list = await api('GET', `/api/appointments?date=${monday}&status=Confirmed`, { token: tokens.admin });
+    test('staff can approve and reject bookings; residents receive the rejection reason', async () => {
+        const list = await api('GET', `/api/appointments?date=${monday}&status=Pending`, { token: tokens.admin });
         assert.equal(list.data.length, 2);
 
-        const done = await api('PATCH', `/api/appointments/${list.data[0].appointment_id}/status`, { token: tokens.admin, json: { status: 'Completed' } });
+        const noReason = await api('PATCH', `/api/appointments/${list.data[0].appointment_id}/status`, { token: tokens.admin, json: { status: 'Rejected' } });
+        assert.equal(noReason.status, 400);
+
+        const rejected = await api('PATCH', `/api/appointments/${list.data[0].appointment_id}/status`, {
+            token: tokens.admin, json: { status: 'Rejected', rejection_reason: 'Please choose a different hearing time.' }
+        });
+        assert.equal(rejected.status, 200);
+        assert.equal(rejected.data.appointment.status, 'Rejected');
+        assert.equal(rejected.data.appointment.rejection_reason, 'Please choose a different hearing time.');
+
+        const residentAppointments = await api('GET', '/api/appointments/mine', { token: tokens.maria });
+        const residentRejected = residentAppointments.data.find(a => a.appointment_id === list.data[0].appointment_id);
+        assert.equal(residentRejected.rejection_reason, 'Please choose a different hearing time.');
+        assert.equal((await api('PATCH', `/api/appointments/${list.data[0].appointment_id}/status`, { token: tokens.admin, json: { status: 'Confirmed' } })).status, 409);
+
+        const approved = await api('PATCH', `/api/appointments/${list.data[1].appointment_id}/status`, {
+            token: tokens.admin, json: { status: 'Confirmed' }
+        });
+        assert.equal(approved.data.appointment.status, 'Confirmed');
+
+        const done = await api('PATCH', `/api/appointments/${list.data[1].appointment_id}/status`, { token: tokens.admin, json: { status: 'Completed' } });
         assert.equal(done.data.appointment.status, 'Completed');
 
-        assert.equal((await api('GET', `/api/appointments/${list.data[0].appointment_id}`, { token: tokens.luz })).status, 404);
+        assert.equal((await api('GET', `/api/appointments/${list.data[1].appointment_id}`, { token: tokens.luz })).status, 404);
     });
 
     test('forecast covers open days only', async () => {

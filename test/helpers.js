@@ -3,6 +3,9 @@
 // whole database when it finishes, so no test data is left behind.
 process.env.DB_NAME = process.env.TEST_DB_NAME || 'e_barangay_test';
 process.env.SEMAPHORE_API_KEY = '';
+process.env.GOOGLE_CALENDAR_API_KEY = '';
+process.env.GOOGLE_CALENDAR_ID = '';
+process.env.GEMINI_API_KEY = '';
 process.env.JWT_SECRET = 'test-secret';
 process.env.AUTH_RATE_LIMIT = '10000';
 process.env.AUTO_MIGRATE = 'false';

@@ -57,6 +57,8 @@ test('legacy base64 attachments are copied into uploaded_files', async () => {
 test('old "Booked" appointments become "Confirmed"', async () => {
     const [row] = await db.query('SELECT status FROM appointments');
     assert.equal(row.status, 'Confirmed');
+    const [appointment] = await db.query('SELECT rejection_reason FROM appointments');
+    assert.equal(appointment.rejection_reason, null);
 });
 
 test('existing document types are kept exactly and no rows are added anywhere', async () => {

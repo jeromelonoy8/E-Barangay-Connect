@@ -3,7 +3,7 @@
 // details. Existing rows are converted where needed; no new rows are inserted.
 
 const REQUEST_STATUSES = "'Pending', 'Approved', 'Ready for Pickup', 'Completed', 'Rejected', 'Cancelled'";
-const APPOINTMENT_STATUSES = "'Confirmed', 'Completed', 'Cancelled', 'No Show'";
+const APPOINTMENT_STATUSES = "'Pending', 'Confirmed', 'Rejected', 'Completed', 'Cancelled', 'No Show'";
 
 async function convertEnum(h, table, column, mappings, allowed, fallback) {
     await h.query(`ALTER TABLE \`${table}\` MODIFY \`${column}\` VARCHAR(30) NULL`);
@@ -100,6 +100,7 @@ async function migrateAppointments(h) {
     // Appointments can now be booked on their own, not only for a document request.
     await h.query('ALTER TABLE appointments MODIFY request_id INT NULL');
     await h.addColumn('appointments', 'purpose', 'VARCHAR(255) NULL AFTER user_id');
+    await h.addColumn('appointments', 'rejection_reason', 'TEXT NULL AFTER status');
     await h.addColumn('appointments', 'updated_at', 'TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP');
     await convertEnum(h, 'appointments', 'status', [['Booked', 'Confirmed']], APPOINTMENT_STATUSES, 'Confirmed');
     await h.addIndex('appointments', 'idx_appointments_slot', 'scheduled_date, time_slot, status');

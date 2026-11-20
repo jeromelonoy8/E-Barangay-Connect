@@ -70,6 +70,16 @@ module.exports = {
         senderName: env.SEMAPHORE_SENDER_NAME || 'SEMAPHORE'
     },
 
+    googleCalendar: {
+        apiKey: env.GOOGLE_CALENDAR_API_KEY || '',
+        calendarId: env.GOOGLE_CALENDAR_ID || ''
+    },
+
+    gemini: {
+        apiKey: env.GEMINI_API_KEY || '',
+        model: env.GEMINI_MODEL || 'gemini-2.5-flash'
+    },
+
     uploads: {
         maxFileBytes: 5 * 1024 * 1024,
         maxProfilePicBytes: 2 * 1024 * 1024
@@ -78,5 +88,5 @@ module.exports = {
     // Workflow states the API logic depends on. Barangay-specific lists (time slots,
     // categories, positions...) live in the database instead; see services/settings.js.
     requestStatuses: ['Pending', 'Approved', 'Ready for Pickup', 'Completed', 'Rejected', 'Cancelled'],
-    appointmentStatuses: ['Confirmed', 'Completed', 'Cancelled', 'No Show']
+    appointmentStatuses: ['Pending', 'Confirmed', 'Rejected', 'Completed', 'Cancelled', 'No Show']
 };

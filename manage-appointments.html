@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Appointments - Barangay Admin Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen flex flex-col">
+    <nav class="bg-[#1e3a8a] text-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+            <div class="font-semibold text-lg tracking-wide">Barangay Admin Portal</div>
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="admin-dashboard.html" class="text-blue-100 hover:text-white">Dashboard</a>
+                <a href="manage-requests.html" class="text-blue-100 hover:text-white">Manage Requests</a>
+                <a href="manage-appointments.html" class="text-white font-semibold">Appointments</a>
+                <a href="announcements.html" class="text-blue-100 hover:text-white">Announcements</a>
+                <a href="add-official.html" class="text-blue-100 hover:text-white">Add Official</a>
+                <button onclick="handleLogout()" class="text-blue-100 hover:text-white cursor-pointer">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 flex-1 w-full space-y-6">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Manage Appointments</h1>
+            <p class="text-slate-500 text-sm mt-1">Review resident bookings and approve or reject pending appointment requests.</p>
+        </div>
+
+        <div id="appointmentsAlert" class="hidden text-sm px-4 py-3 rounded-xl"></div>
+
+        <section class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
+            <input id="appointmentSearch" type="search" placeholder="Search resident or purpose"
+                class="w-full md:max-w-sm px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-800">
+            <select id="appointmentStatusFilter" onchange="loadAppointments()"
+                class="w-full md:w-48 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-800">
+                <option value="Pending" selected>Pending review</option>
+                <option value="All">All appointments</option>
+                <option value="Confirmed">Approved</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="No Show">No Show</option>
+            </select>
+        </section>
+
+        <section class="request-table-container">
+            <div class="overflow-x-auto">
+                <table class="request-table min-w-[850px]">
+                    <thead>
+                        <tr>
+                            <th>Appointment</th>
+                            <th>Resident</th>
+                            <th>Purpose</th>
+                            <th>Date &amp; Time</th>
+                            <th>Status / Reason</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appointmentsTableBody"></tbody>
+                </table>
+            </div>
+            <p id="appointmentsEmpty" class="hidden p-8 text-center text-sm text-slate-500">No appointments found.</p>
+        </section>
+    </main>
+
+    <div id="rejectAppointmentModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rejectModalTitle">
+        <form class="modal-card p-6 space-y-4" onsubmit="handleRejectAppointment(event)">
+            <div>
+                <h2 id="rejectModalTitle" class="text-lg font-bold text-slate-900">Reject appointment</h2>
+                <p class="text-sm text-slate-500 mt-1">Enter a reason so the resident knows why this request was rejected.</p>
+            </div>
+            <label class="block text-sm font-semibold text-slate-700" for="appointmentRejectionReason">Reason</label>
+            <textarea id="appointmentRejectionReason" required minlength="3" maxlength="1000" rows="4"
+                class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-800"
+                placeholder="Explain what needs to change or why the requested time cannot be accommodated."></textarea>
+            <div id="rejectAppointmentAlert" class="hidden text-sm rounded-lg px-3 py-2"></div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeRejectAppointment()" class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700">Cancel</button>
+                <button id="confirmRejectAppointment" type="submit" class="px-4 py-2 rounded-lg bg-rose-700 text-white font-semibold">Reject appointment</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script>
+        Api.requireSession('admin');
+        Api.setupAdminNav();
+
+        let appointments = [];
+        let rejectingAppointmentId = null;
+        let searchTimer;
+
+        document.getElementById('appointmentSearch').addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(loadAppointments, 200);
+        });
+
+        loadAppointments();
+
+        async function loadAppointments() {
+            const params = new URLSearchParams();
+            const status = document.getElementById('appointmentStatusFilter').value;
+            const search = document.getElementById('appointmentSearch').value.trim();
+            if (status !== 'All') params.set('status', status);
+            if (search) params.set('search', search);
+            const body = document.getElementById('appointmentsTableBody');
+            body.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">Loading appointments...</td></tr>';
+            try {
+                appointments = await Api.get('admin', `/api/appointments?${params.toString()}`);
+                renderAppointments();
+                showAppointmentsAlert('', false);
+                return true;
+            } catch (err) {
+                body.innerHTML = '';
+                showAppointmentsAlert(err.message, true);
+                return false;
+            }
+        }
+
+        function renderAppointments() {
+            const body = document.getElementById('appointmentsTableBody');
+            const empty = document.getElementById('appointmentsEmpty');
+            empty.classList.toggle('hidden', appointments.length !== 0);
+            if (!appointments.length) {
+                body.innerHTML = '';
+                return;
+            }
+            body.innerHTML = appointments.map(appointment => {
+                const actions = appointment.status === 'Pending'
+                    ? `<div class="flex flex-wrap gap-2">
+                        <button onclick="approveAppointment(${appointment.appointment_id})" class="btn-action-approve"><i class="fa-solid fa-check"></i> Approve</button>
+                        <button onclick="openRejectAppointment(${appointment.appointment_id})" class="btn-action-reject"><i class="fa-solid fa-xmark"></i> Reject</button>
+                    </div>`
+                    : '<span class="text-slate-400">—</span>';
+                const reason = appointment.rejection_reason
+                    ? `<p class="text-xs text-rose-700 mt-1"><strong>Reason:</strong> ${Api.escape(appointment.rejection_reason)}</p>`
+                    : '';
+                return `<tr>
+                    <td><span class="font-bold text-blue-900">${Api.escape(appointment.reference_no)}</span></td>
+                    <td><div class="font-semibold">${Api.escape(appointment.resident_name)}</div><div class="text-xs text-slate-500">${Api.escape(appointment.resident_phone || '')}</div></td>
+                    <td>${Api.escape(appointment.purpose)}</td>
+                    <td><div>${Api.escape(formatAppointmentDate(appointment.date))}</div><div class="text-xs text-slate-500">${Api.escape(appointment.time_slot)}</div></td>
+                    <td><span class="badge-status ${appointment.status === 'Pending' ? 'badge-pending' : appointment.status === 'Rejected' ? 'badge-rejected' : appointment.status === 'Confirmed' ? 'badge-approved' : ''}">${Api.escape(appointment.status)}</span>${reason}</td>
+                    <td>${actions}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function approveAppointment(appointmentId) {
+            if (!confirm('Approve this appointment? The resident will be notified.')) return;
+            await updateAppointmentStatus(appointmentId, 'Confirmed');
+        }
+
+        function openRejectAppointment(appointmentId) {
+            rejectingAppointmentId = appointmentId;
+            document.getElementById('appointmentRejectionReason').value = '';
+            document.getElementById('rejectAppointmentAlert').classList.add('hidden');
+            document.getElementById('rejectAppointmentModal').classList.remove('hidden');
+            document.getElementById('appointmentRejectionReason').focus();
+        }
+
+        function closeRejectAppointment() {
+            rejectingAppointmentId = null;
+            document.getElementById('rejectAppointmentModal').classList.add('hidden');
+        }
+
+        async function handleRejectAppointment(event) {
+            event.preventDefault();
+            const button = document.getElementById('confirmRejectAppointment');
+            button.disabled = true;
+            try {
+                const updated = await updateAppointmentStatus(
+                    rejectingAppointmentId,
+                    'Rejected',
+                    document.getElementById('appointmentRejectionReason').value.trim()
+                );
+                if (updated) closeRejectAppointment();
+            } catch (err) {
+                const alert = document.getElementById('rejectAppointmentAlert');
+                alert.textContent = err.message;
+                alert.className = 'text-sm rounded-lg px-3 py-2 bg-rose-50 text-rose-700';
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function updateAppointmentStatus(appointmentId, status, rejectionReason) {
+            try {
+                await Api.request('admin', 'PATCH', `/api/appointments/${appointmentId}/status`, {
+                    json: { status, ...(rejectionReason ? { rejection_reason: rejectionReason } : {}) }
+                });
+                if (await loadAppointments()) {
+                    showAppointmentsAlert(`Appointment ${status.toLowerCase()} successfully.`, false);
+                }
+                return true;
+            } catch (err) {
+                showAppointmentsAlert(err.message, true);
+                return false;
+            }
+        }
+
+        function showAppointmentsAlert(message, isError) {
+            const alert = document.getElementById('appointmentsAlert');
+            alert.textContent = message;
+            alert.className = `text-sm px-4 py-3 rounded-xl ${isError ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-800'}`;
+            alert.classList.toggle('hidden', !message);
+        }
+
+        function formatAppointmentDate(value) {
+            return new Date(`${String(value).slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+        }
+    </script>
+</body>
+</html>

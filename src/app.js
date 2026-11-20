@@ -23,6 +23,7 @@ app.use('/api/documents', require('./routes/documents'));
 app.use('/api/requests', requestsRouter);
 app.use('/api/files', filesRouter);
 app.use('/api/appointments', require('./routes/appointments'));
+app.use('/api/help', require('./routes/help'));
 app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/officials', require('./routes/officials'));
 app.use('/api/admin', require('./routes/admin'));
@@ -39,7 +40,7 @@ app.use('/api', (req, res) => {
 // Server code, package files and anything in subfolders are never served.
 const ROOT = path.join(__dirname, '..');
 const PUBLIC_EXTENSIONS = new Set(['.html', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.ico']);
-const PUBLIC_SCRIPTS = new Set(['/api-client.js', '/dashboard-charts.js']);
+const PUBLIC_SCRIPTS = new Set(['/api-client.js', '/dashboard-charts.js', '/chatbot-widget.js', '/appointment-page.js']);
 const serveStatic = express.static(ROOT, { index: 'index.html', dotfiles: 'ignore' });
 
 app.use((req, res, next) => {

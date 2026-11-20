@@ -166,21 +166,37 @@ const res = await fetch('/api/requests', {
 
 Time slots, capacity and open days come from [Settings](#settings). Until they are set, availability and
 forecast return `configured: false` and booking returns `409`. `time_slot` must exactly match one of
-the configured slots. Statuses: `Confirmed`, `Completed`, `Cancelled`, `No Show`.
+the configured slots. Statuses: `Pending`, `Confirmed`, `Rejected`, `Completed`, `Cancelled`, `No Show`.
+New bookings start as `Pending`; staff must approve them (`Confirmed`) or reject them. Pending
+appointments reserve a slot. Rejection requires a reason, which is returned to the resident and sent
+in the appointment notification.
 
 | Method | Path | Who | Body / notes |
 |---|---|---|---|
+| GET | `/appointments/calendar` | public | Up to 8 upcoming events from the configured public Google Calendar |
 | GET | `/appointments/availability?date=` | public | Every configured slot with `booked`, `available`, `is_full` |
 | GET | `/appointments/forecast?days=7` | public | Bookings per open day, for the weekly traffic cards |
-| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`. `409` if the slot is full, already booked by this resident, or scheduling is not configured |
-| GET | `/appointments/mine` | resident | Add `?upcoming=true` for confirmed appointments from today onward |
-| PATCH | `/appointments/:id/cancel` | owner | Only when `Confirmed` |
+| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`; creates a pending appointment. `409` if the slot is full, already booked by this resident, or scheduling is not configured |
+| GET | `/appointments/mine` | resident | Add `?upcoming=true` for pending or confirmed appointments from today onward |
+| PATCH | `/appointments/:id/cancel` | owner | Only when `Pending` or `Confirmed` |
 | GET | `/appointments/:id` | owner or staff | |
 | GET | `/appointments` | staff | Filters: `date`, `from`, `to`, `status`, `search` |
-| PATCH | `/appointments/:id/status` | staff | `status` |
+| PATCH | `/appointments/:id/status` | staff | `{ "status": "Rejected", "rejection_reason": "..." }` for rejection; use `Confirmed` to approve |
 
 Appointment object: `appointment_id, reference_no, user_id, resident_name, resident_phone, request_id,
-request_reference_no, purpose, date, time_slot, status, created_at, updated_at`.
+request_reference_no, purpose, date, time_slot, status, rejection_reason, created_at, updated_at`.
+
+### Resident help integrations
+
+The appointment page reads a public Google Calendar through the server. Set `GOOGLE_CALENDAR_ID`
+and `GOOGLE_CALENDAR_API_KEY` in the server environment; restrict that key to the Google Calendar API.
+The resident help widget uses Gemini through `POST /api/help/chat` and requires `GEMINI_API_KEY`.
+Both integrations keep API keys on the server. The chatbot is limited to 20 messages per IP per 15 minutes
+and does not have access to resident records.
+
+| Method | Path | Who | Body / notes |
+|---|---|---|---|
+| POST | `/help/chat` | resident | `{ "message": "..." }`; returns a Gemini response |
 
 ### Announcements
 

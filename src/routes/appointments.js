@@ -15,7 +15,7 @@ const NOT_CONFIGURED = 'Appointment scheduling has not been set up by the barang
 
 const SELECT_APPOINTMENT = `
     SELECT a.appointment_id, a.user_id, a.request_id, a.purpose, a.scheduled_date, a.time_slot,
-           a.status, a.created_at, a.updated_at,
+           a.status, a.rejection_reason, a.created_at, a.updated_at,
            u.full_name AS resident_name, u.username AS resident_username, u.phone_number AS resident_phone
     FROM appointments a
     JOIN users u ON u.user_id = a.user_id`;
@@ -33,6 +33,7 @@ function formatAppointment(row) {
         date: row.scheduled_date,
         time_slot: row.time_slot,
         status: row.status,
+        rejection_reason: row.rejection_reason,
         created_at: row.created_at,
         updated_at: row.updated_at
     };
@@ -51,13 +52,58 @@ function assertBookableDate(schedule, date) {
 
 async function slotCounts(date) {
     const rows = await db.query(
-        "SELECT time_slot, COUNT(*) AS booked FROM appointments WHERE scheduled_date = ? AND status = 'Confirmed' GROUP BY time_slot",
+        "SELECT time_slot, COUNT(*) AS booked FROM appointments WHERE scheduled_date = ? AND status IN ('Pending', 'Confirmed') GROUP BY time_slot",
         [date]
     );
     return Object.fromEntries(rows.map(r => [r.time_slot, Number(r.booked)]));
 }
 
 // --- Public availability ---------------------------------------------------
+
+router.get('/calendar', async (req, res) => {
+    if (!config.googleCalendar.apiKey || !config.googleCalendar.calendarId) {
+        return res.status(503).json({ error: 'The barangay calendar is not configured on the server.' });
+    }
+
+    const now = new Date();
+    const until = new Date(now);
+    until.setDate(until.getDate() + 30);
+    const query = new URLSearchParams({
+        timeMin: now.toISOString(),
+        timeMax: until.toISOString(),
+        singleEvents: 'true',
+        orderBy: 'startTime',
+        maxResults: '8'
+    });
+    const endpoint = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(config.googleCalendar.calendarId)}/events?${query}`;
+
+    let response;
+    try {
+        response = await fetch(endpoint, {
+            headers: { 'X-Goog-Api-Key': config.googleCalendar.apiKey },
+            signal: AbortSignal.timeout(8000)
+        });
+    } catch (err) {
+        console.error('[CALENDAR] Google Calendar request failed:', err.message);
+        return res.status(502).json({ error: 'The barangay calendar is temporarily unavailable.' });
+    }
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        console.error(`[CALENDAR] Google Calendar returned ${response.status}:`, data.error && data.error.message);
+        return res.status(502).json({ error: 'The barangay calendar is temporarily unavailable.' });
+    }
+
+    res.json({
+        events: (data.items || []).map(event => ({
+            title: event.summary || 'Barangay event',
+            start: event.start && (event.start.dateTime || event.start.date),
+            end: event.end && (event.end.dateTime || event.end.date),
+            location: event.location || null,
+            url: event.htmlLink || null
+        }))
+    });
+});
 
 // Real-time occupancy of every slot on a date: ?date=YYYY-MM-DD
 router.get('/availability', async (req, res) => {
@@ -91,7 +137,7 @@ router.get('/forecast', async (req, res) => {
     const end = time.addDays(start, days - 1);
 
     const rows = await db.query(
-        "SELECT scheduled_date, COUNT(*) AS booked FROM appointments WHERE status = 'Confirmed' AND scheduled_date BETWEEN ? AND ? GROUP BY scheduled_date",
+        "SELECT scheduled_date, COUNT(*) AS booked FROM appointments WHERE status IN ('Pending', 'Confirmed') AND scheduled_date BETWEEN ? AND ? GROUP BY scheduled_date",
         [start, end]
     );
     const counts = Object.fromEntries(rows.map(r => [r.scheduled_date, Number(r.booked)]));
@@ -135,14 +181,14 @@ router.post('/', requireResident, async (req, res) => {
         appointmentId = await db.withTransaction(async (conn) => {
             // Locks the slot's rows (and the gap after them) so two residents cannot both take the last place.
             const [slotRows] = await conn.query(
-                "SELECT user_id FROM appointments WHERE scheduled_date = ? AND time_slot = ? AND status = 'Confirmed' FOR UPDATE",
+                "SELECT user_id FROM appointments WHERE scheduled_date = ? AND time_slot = ? AND status IN ('Pending', 'Confirmed') FOR UPDATE",
                 [date, slot]
             );
             if (slotRows.some(r => r.user_id === req.user.user_id)) throw conflict('You already have an appointment in this time slot.');
             if (slotRows.length >= schedule.capacity) throw conflict('This time slot is already full. Please choose another one.');
 
             const [result] = await conn.query(
-                'INSERT INTO appointments (request_id, user_id, purpose, scheduled_date, time_slot) VALUES (?, ?, ?, ?, ?)',
+                "INSERT INTO appointments (request_id, user_id, purpose, scheduled_date, time_slot, status) VALUES (?, ?, ?, ?, ?, 'Pending')",
                 [requestId, req.user.user_id, purpose, date, slot]
             );
             return result.insertId;
@@ -155,15 +201,15 @@ router.post('/', requireResident, async (req, res) => {
     }
 
     const ref = reference('APT', appointmentId);
-    sendSms(req.user.user_id, `E-BARANGAY CONNECT: Your appointment ${ref} is confirmed for ${date}, ${slot} at the Barangay Hall.`);
-    res.status(201).json({ message: 'Appointment successfully scheduled.', appointment: formatAppointment(await findAppointment(appointmentId)) });
+    sendSms(req.user.user_id, `E-BARANGAY CONNECT: Your appointment request ${ref} for ${date}, ${slot} was received and is awaiting barangay review.`);
+    res.status(201).json({ message: 'Appointment request submitted and is awaiting barangay review.', appointment: formatAppointment(await findAppointment(appointmentId)) });
 });
 
-// ?upcoming=true limits the list to confirmed appointments from today onward.
+// ?upcoming=true limits the list to pending or confirmed appointments from today onward.
 router.get('/mine', requireResident, async (req, res) => {
     const upcoming = req.query.upcoming === 'true';
     const rows = await db.query(
-        `${SELECT_APPOINTMENT} WHERE a.user_id = ? ${upcoming ? "AND a.status = 'Confirmed' AND a.scheduled_date >= ?" : ''}
+        `${SELECT_APPOINTMENT} WHERE a.user_id = ? ${upcoming ? "AND a.status IN ('Pending', 'Confirmed') AND a.scheduled_date >= ?" : ''}
          ORDER BY a.scheduled_date ${upcoming ? 'ASC' : 'DESC'}, a.time_slot`,
         upcoming ? [req.user.user_id, time.today()] : [req.user.user_id]
     );
@@ -174,7 +220,7 @@ router.patch('/:id/cancel', requireResident, async (req, res) => {
     const id = v.referenceId(req.params.id, 'Appointment ID');
     const row = await findAppointment(id);
     if (row.user_id !== req.user.user_id) throw notFound('Appointment not found.');
-    if (row.status !== 'Confirmed') throw conflict(`This appointment is already ${row.status.toLowerCase()}.`);
+    if (!['Pending', 'Confirmed'].includes(row.status)) throw conflict(`This appointment is already ${row.status.toLowerCase()}.`);
 
     await db.query("UPDATE appointments SET status = 'Cancelled' WHERE appointment_id = ?", [id]);
     res.json({ message: 'Appointment cancelled.', appointment: formatAppointment(await findAppointment(id)) });
@@ -220,11 +266,32 @@ router.patch('/:id/status', requireStaff, async (req, res) => {
     const status = v.oneOf(req.body || {}, 'status', config.appointmentStatuses, { required: true, label: 'Status' });
     const row = await findAppointment(id);
 
-    await db.query('UPDATE appointments SET status = ? WHERE appointment_id = ?', [status, id]);
-    if (status === 'Cancelled' && row.status !== 'Cancelled') {
-        sendSms(row.user_id, `E-BARANGAY CONNECT: Your appointment ${reference('APT', id)} on ${row.scheduled_date}, ${row.time_slot} was cancelled by the barangay office. Please book a new schedule.`);
+    const transitions = {
+        Pending: ['Confirmed', 'Rejected', 'Cancelled'],
+        Confirmed: ['Completed', 'Cancelled', 'No Show']
+    };
+    if (!transitions[row.status] || !transitions[row.status].includes(status)) {
+        throw conflict(`An appointment cannot be changed from ${row.status} to ${status}.`);
     }
-    res.json({ message: `Appointment ${reference('APT', id)} marked as ${status}.`, appointment: formatAppointment(await findAppointment(id)) });
+
+    const rejectionReason = status === 'Rejected'
+        ? v.str(req.body || {}, 'rejection_reason', { required: true, max: 1000, label: 'Rejection reason' })
+        : null;
+    const result = await db.query(
+        'UPDATE appointments SET status = ?, rejection_reason = ? WHERE appointment_id = ? AND status = ?',
+        [status, rejectionReason, id, row.status]
+    );
+    if (result.affectedRows === 0) throw conflict('This appointment was updated by another staff member. Refresh the list and try again.');
+
+    const ref = reference('APT', id);
+    if (status === 'Rejected') {
+        sendSms(row.user_id, `E-BARANGAY CONNECT: Your appointment request ${ref} was rejected. Reason: ${rejectionReason}`);
+    } else if (status === 'Confirmed') {
+        sendSms(row.user_id, `E-BARANGAY CONNECT: Your appointment ${ref} was approved for ${row.scheduled_date}, ${row.time_slot} at the Barangay Hall.`);
+    } else if (status === 'Cancelled') {
+        sendSms(row.user_id, `E-BARANGAY CONNECT: Your appointment ${ref} on ${row.scheduled_date}, ${row.time_slot} was cancelled by the barangay office.`);
+    }
+    res.json({ message: `Appointment ${ref} marked as ${status}.`, appointment: formatAppointment(await findAppointment(id)) });
 });
 
 // --- Shared -------------------------------------------------------------------

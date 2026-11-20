@@ -18,14 +18,14 @@ router.get('/overview', requireAuth, async (req, res) => {
         db.query(
             `SELECT scheduled_date, COUNT(*) AS bookings
              FROM appointments
-             WHERE scheduled_date BETWEEN ? AND ? AND status <> 'Cancelled'
+             WHERE scheduled_date BETWEEN ? AND ? AND status NOT IN ('Cancelled', 'Rejected')
              GROUP BY scheduled_date`,
             [first, last]
         ),
         db.query(
             `SELECT COUNT(*) AS bookings, COUNT(DISTINCT user_id) AS residents
              FROM appointments
-             WHERE scheduled_date BETWEEN ? AND ? AND status <> 'Cancelled'`,
+             WHERE scheduled_date BETWEEN ? AND ? AND status NOT IN ('Cancelled', 'Rejected')`,
             [first, last]
         ),
         db.query(

@@ -18,7 +18,7 @@ router.get('/stats', requireStaff, async (req, res) => {
         db.query("SELECT COUNT(*) AS n FROM users WHERE role IN ('official', 'admin') AND is_active = TRUE"),
         db.query(
             `SELECT SUM(scheduled_date = ?) AS today, SUM(scheduled_date >= ?) AS upcoming
-             FROM appointments WHERE status = 'Confirmed'`,
+             FROM appointments WHERE status IN ('Pending', 'Confirmed')`,
             [today, today]
         ),
         db.query('SELECT COUNT(*) AS n FROM announcements'),
