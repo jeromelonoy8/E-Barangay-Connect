@@ -109,7 +109,7 @@ Barangay-specific configuration, stored in the database. Every value is empty un
 | Key | Type | Example | Effect |
 |---|---|---|---|
 | `appointment_time_slots` | list of text | `["08:30 AM - 09:30 AM", "01:30 PM - 02:30 PM"]` | Slots residents can book |
-| `appointment_slot_capacity` | number 1–1000 | `10` | Residents per slot |
+| `appointment_slot_capacity` | number 1–1000 | `10` | Legacy setting retained for compatibility; appointments are not capped |
 | `appointment_open_days` | list of 0–6 | `[1, 2, 3, 4, 5]` (0 = Sunday) | Days the hall accepts appointments |
 | `appointment_purposes` | list of text | `["Document Pickup", "Consultation"]` | When set, residents pick one when booking. When empty, purpose is free text |
 | `announcement_categories` | list of text | `["General News", "Health Notice"]` | When set, announcements must use one. When empty, category is free text |
@@ -164,9 +164,9 @@ const res = await fetch('/api/requests', {
 
 ### Appointments
 
-Time slots, capacity and open days come from [Settings](#settings). Until a complete custom schedule is
-saved, the scheduler uses a Monday–Friday fallback with ten evenly spaced appointment windows from
-8:00 AM to 5:00 PM. The fallback has no per-slot or per-day booking limit. `time_slot` must exactly
+Time slots and open days come from [Settings](#settings). Until a complete custom schedule is
+saved, the scheduler uses a Monday–Friday fallback with eight hourly appointment windows from
+8:00 AM to 4:00 PM. Bookings have no per-slot or per-day capacity limit. `time_slot` must exactly
 match one of the effective schedule's slots. Statuses: `Pending`, `Confirmed`, `Rejected`, `Completed`,
 `Cancelled`, `No Show`.
 New bookings start as `Pending`; staff must approve them (`Confirmed`) or reject them. Pending
@@ -175,11 +175,11 @@ in the appointment notification.
 
 | Method | Path | Who | Body / notes |
 |---|---|---|---|
-| GET | `/appointments/schedule` | public | Effective schedule: time slots, capacity (`null` means unlimited), open days, purposes, and whether defaults are active |
+| GET | `/appointments/schedule` | public | Effective schedule: time slots, unlimited capacity (`null`), open days, purposes, and whether defaults are active |
 | GET | `/appointments/calendar` | public | Up to 8 Google Calendar events; on missing configuration or Google `403`/`404`, returns upcoming confirmed appointment dates and times without resident details |
 | GET | `/appointments/availability?date=` | public | Every effective slot with `booked`, `available`, `is_full` |
 | GET | `/appointments/forecast?days=7` | public | Bookings per open day, for the weekly traffic cards |
-| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`; creates a pending appointment. `409` if the slot is full or already booked by this resident |
+| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`; creates a pending appointment. `409` if this resident already booked the same slot |
 | GET | `/appointments/mine` | resident | Add `?upcoming=true` for pending or confirmed appointments from today onward |
 | PATCH | `/appointments/:id/cancel` | owner | Only when `Pending` or `Confirmed` |
 | GET | `/appointments/:id` | owner or staff | |

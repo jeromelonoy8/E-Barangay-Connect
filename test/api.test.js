@@ -126,15 +126,22 @@ describe('settings', () => {
         assert.equal(schedule.data.is_default, true);
         assert.deepEqual(schedule.data.open_days, [1, 2, 3, 4, 5]);
         assert.equal(schedule.data.capacity_per_slot, null);
-        assert.equal(schedule.data.time_slots.length, 10);
-        assert.equal(schedule.data.time_slots[0], '08:00 AM - 08:54 AM');
-        assert.equal(schedule.data.time_slots[9], '04:06 PM - 05:00 PM');
+        assert.equal(schedule.data.time_slots.length, 8);
+        assert.equal(schedule.data.time_slots[0], '08:00 AM - 09:00 AM');
+        assert.equal(schedule.data.time_slots[7], '03:00 PM - 04:00 PM');
 
         const availability = await api('GET', `/api/appointments/availability?date=${nextWeekday(1, 1)}`);
         assert.equal(availability.data.configured, true);
         assert.equal(availability.data.is_default, true);
-        assert.equal(availability.data.slots.length, 10);
+        assert.equal(availability.data.slots.length, 8);
         assert.ok(availability.data.slots.every(slot => slot.available === null && !slot.is_full));
+
+        for (const date of [nextWeekday(5), nextWeekday(1, 1)]) {
+            const openDay = await api('GET', `/api/appointments/availability?date=${date}`);
+            assert.equal(openDay.status, 200);
+            assert.equal(openDay.data.is_open, true);
+            assert.equal(openDay.data.slots[0].time_slot, '08:00 AM - 09:00 AM');
+        }
 
         const date = nextWeekday(2, 2);
         for (const time_slot of schedule.data.time_slots) {
@@ -149,7 +156,7 @@ describe('settings', () => {
         });
         assert.equal(extraBooking.status, 201, JSON.stringify(extraBooking.data));
         const dailyAvailability = await api('GET', `/api/appointments/availability?date=${date}`);
-        assert.equal(dailyAvailability.data.total_booked, 11);
+        assert.equal(dailyAvailability.data.total_booked, 9);
     });
 
     test('only admins can change settings, and values are validated', async () => {
@@ -331,7 +338,7 @@ describe('appointments', () => {
         assert.equal(res.data.configured, true);
         assert.equal(res.data.is_open, true);
         assert.deepEqual(res.data.slots.map(s => s.time_slot), SETTINGS.appointment_time_slots);
-        assert.ok(res.data.slots.every(s => s.booked === 0 && s.available === 2));
+        assert.ok(res.data.slots.every(s => s.booked === 0 && s.available === null));
     });
 
     test('calendar falls back cleanly when Google Calendar is not configured', async () => {
@@ -354,7 +361,7 @@ describe('appointments', () => {
         assert.equal((await book({ date: monday, purpose: 'Not on the list' })).status, 400);
     });
 
-    test('a slot fills up at capacity and a resident cannot double-book', async () => {
+    test('slots have no booking cap and a resident cannot double-book', async () => {
         const first = await api('POST', '/api/appointments', { token: tokens.juan, json: { purpose: 'Document Pickup', date: monday, time_slot: slot } });
         assert.equal(first.status, 201, JSON.stringify(first.data));
         assert.match(first.data.appointment.reference_no, /^APT-\d{4}$/);
@@ -364,22 +371,24 @@ describe('appointments', () => {
         assert.equal(dup.status, 409);
 
         assert.equal((await api('POST', '/api/appointments', { token: tokens.maria, json: { purpose: 'Consultation', date: monday, time_slot: slot } })).status, 201);
-        const full = await api('POST', '/api/appointments', { token: tokens.pedro, json: { purpose: 'Consultation', date: monday, time_slot: slot } });
-        assert.equal(full.status, 409);
+        const unlimited = await api('POST', '/api/appointments', { token: tokens.pedro, json: { purpose: 'Consultation', date: monday, time_slot: slot } });
+        assert.equal(unlimited.status, 201);
 
         const availability = await api('GET', `/api/appointments/availability?date=${monday}`);
-        assert.equal(availability.data.slots[0].is_full, true);
+        assert.equal(availability.data.slots[0].is_full, false);
     });
 
-    test('simultaneous bookings never exceed the slot capacity', async () => {
+    test('more residents than the configured capacity can book the same slot', async () => {
         const tuesday = nextWeekday(2, 1);
-        const results = await Promise.all(['pedro', 'jose', 'ana', 'luz'].map(name =>
-            api('POST', '/api/appointments', { token: tokens[name], json: { purpose: 'Document Pickup', date: tuesday, time_slot: slot } })
-        ));
-        assert.equal(results.filter(r => r.status === 201).length, 2);
-        assert.ok(results.every(r => r.status === 201 || r.status === 409));
+        const results = [];
+        for (const name of ['pedro', 'jose', 'ana', 'luz']) {
+            results.push(await api('POST', '/api/appointments', {
+                token: tokens[name], json: { purpose: 'Document Pickup', date: tuesday, time_slot: slot }
+            }));
+        }
+        assert.ok(results.every(r => r.status === 201), JSON.stringify(results.map(r => r.data)));
         const [{ n }] = await db.query("SELECT COUNT(*) AS n FROM appointments WHERE scheduled_date = ? AND status IN ('Pending', 'Confirmed')", [tuesday]);
-        assert.equal(Number(n), 2);
+        assert.equal(Number(n), 4);
     });
 
     test('cancelling frees the place again', async () => {
@@ -612,5 +621,23 @@ describe('admin dashboard', () => {
 
         assert.equal((await api('PATCH', `/api/admin/residents/${jose.id}`, { token: tokens.admin, json: { is_active: false } })).status, 200);
         assert.equal((await api('GET', '/api/auth/me', { token: tokens.jose })).status, 401);
+    });
+
+    test('appointment endpoints repair a missing table or required column', async () => {
+        const date = nextWeekday(5, 2);
+        await db.query('ALTER TABLE appointments DROP COLUMN purpose');
+        let availability = await api('GET', `/api/appointments/availability?date=${date}`);
+        assert.equal(availability.status, 200, JSON.stringify(availability.data));
+
+        await db.query('DROP TABLE appointments');
+        availability = await api('GET', `/api/appointments/availability?date=${date}`);
+        assert.equal(availability.status, 200, JSON.stringify(availability.data));
+        assert.equal(availability.data.slots.length, 8);
+
+        const booking = await api('POST', '/api/appointments', {
+            token: tokens.juan,
+            json: { purpose: 'Consultation', date, time_slot: availability.data.slots[0].time_slot }
+        });
+        assert.equal(booking.status, 201, JSON.stringify(booking.data));
     });
 });

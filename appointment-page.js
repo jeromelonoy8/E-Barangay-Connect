@@ -139,7 +139,7 @@ async function handleDateChange() {
             availability.slots.map(slot => {
                 const full = slot.is_full;
                 const demand = availability.capacity_per_slot !== null && slot.booked >= Math.ceil(availability.capacity_per_slot / 2) ? ' · Busy' : '';
-                const openCount = slot.available === null ? 'No booking limit' : `${slot.available} available`;
+                const openCount = slot.available === null ? 'Available' : `${slot.available} available`;
                 return `<option value="${Api.escape(slot.time_slot)}" ${full ? 'disabled' : ''}>${Api.escape(slot.time_slot)} — ${openCount}${demand}</option>`;
             }).join('');
     } catch (err) {

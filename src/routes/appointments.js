@@ -7,11 +7,17 @@ const { reference } = require('../utils/format');
 const { requireAuth, requireStaff, requireResident } = require('../middleware/auth');
 const { sendSms } = require('../services/sms');
 const { appointmentSchedule } = require('../services/settings');
+const { ensureAppointmentSchema } = require('../services/appointment-schema');
 const { badRequest, notFound, conflict } = require('../utils/errors');
 
 const router = express.Router();
 
 const NOT_CONFIGURED = 'Appointment scheduling has not been set up by the barangay office yet.';
+
+router.use(async (req, res, next) => {
+    await ensureAppointmentSchema();
+    next();
+});
 
 const SELECT_APPOINTMENT = `
     SELECT a.appointment_id, a.user_id, a.request_id, a.purpose, a.scheduled_date, a.time_slot,
@@ -224,15 +230,12 @@ router.post('/', requireResident, async (req, res) => {
     let appointmentId;
     try {
         appointmentId = await db.withTransaction(async (conn) => {
-            // Locks this time slot's rows to prevent duplicate bookings and enforce configured capacity.
+            // Check existing bookings to prevent residents from booking the same slot twice.
             const [slotRows] = await conn.query(
                 "SELECT user_id FROM appointments WHERE scheduled_date = ? AND time_slot = ? AND status IN ('Pending', 'Confirmed') FOR UPDATE",
                 [date, slot]
             );
             if (slotRows.some(r => r.user_id === req.user.user_id)) throw conflict('You already have an appointment in this time slot.');
-            if (schedule.capacity !== null && slotRows.length >= schedule.capacity) {
-                throw conflict('This time slot is already full. Please choose another one.');
-            }
 
             const [result] = await conn.query(
                 "INSERT INTO appointments (request_id, user_id, purpose, scheduled_date, time_slot, status) VALUES (?, ?, ?, ?, ?, 'Pending')",

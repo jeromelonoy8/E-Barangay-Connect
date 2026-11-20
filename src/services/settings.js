@@ -6,16 +6,14 @@ const { badRequest } = require('../utils/errors');
 
 const DEFAULT_APPOINTMENT_SCHEDULE = {
     timeSlots: [
-        '08:00 AM - 08:54 AM',
-        '08:54 AM - 09:48 AM',
-        '09:48 AM - 10:42 AM',
-        '10:42 AM - 11:36 AM',
-        '11:36 AM - 12:30 PM',
-        '12:30 PM - 01:24 PM',
-        '01:24 PM - 02:18 PM',
-        '02:18 PM - 03:12 PM',
-        '03:12 PM - 04:06 PM',
-        '04:06 PM - 05:00 PM'
+        '08:00 AM - 09:00 AM',
+        '09:00 AM - 10:00 AM',
+        '10:00 AM - 11:00 AM',
+        '11:00 AM - 12:00 PM',
+        '12:00 PM - 01:00 PM',
+        '01:00 PM - 02:00 PM',
+        '02:00 PM - 03:00 PM',
+        '03:00 PM - 04:00 PM'
     ],
     capacity: null,
     openDays: [1, 2, 3, 4, 5]
@@ -106,11 +104,11 @@ async function appointmentSchedule() {
     const s = await getSettings();
     const schedule = {
         timeSlots: s.appointment_time_slots,
-        capacity: s.appointment_slot_capacity,
+        capacity: null,
         openDays: s.appointment_open_days,
         purposes: s.appointment_purposes
     };
-    schedule.configured = schedule.timeSlots.length > 0 && Boolean(schedule.capacity) && schedule.openDays.length > 0;
+    schedule.configured = schedule.timeSlots.length > 0 && schedule.openDays.length > 0;
     if (schedule.configured) return { ...schedule, isDefault: false };
     return {
         ...DEFAULT_APPOINTMENT_SCHEDULE,
