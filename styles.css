@@ -745,3 +745,65 @@ select.custom-input {
     background-position: right 1rem center;
     background-size: 1em;
 }
+
+/* Keep shared page layouts usable on narrow screens without changing their design. */
+html,
+body {
+    max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+    nav > div {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 0.75rem 1rem;
+    }
+
+    nav > div > :first-child,
+    nav > div > :nth-child(2) {
+        flex: 1 1 100%;
+    }
+
+    nav > div > :nth-child(2) {
+        flex-wrap: wrap;
+        gap: 0.75rem 1rem;
+    }
+
+    nav > div > :nth-child(2) > * {
+        margin-left: 0 !important;
+    }
+}
+
+@media (max-width: 640px) {
+    main {
+        min-width: 0;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    main > .bg-white.rounded-2xl {
+        padding: 1.25rem !important;
+    }
+
+    main .flex.justify-between.items-center {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .request-table-container,
+    .overflow-x-auto {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-overlay {
+        align-items: flex-start;
+        overflow-y: auto;
+    }
+
+    .modal-card {
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+    }
+}

@@ -120,6 +120,7 @@
                         <!-- Loaded from the document type's requirements -->
                     </ul>
                     <p id="reqFee" class="text-xs font-bold text-slate-700 mt-2"></p>
+                    <p class="text-[10px] text-slate-500 mt-2">These are commonly requested items; local requirements may vary by barangay and purpose.</p>
                 </div>
 
                 <!-- Purpose Field -->
@@ -202,7 +203,75 @@
             }
         }
 
-        // Shows the selected document's requirements (one per line, as entered by the admin) and fee.
+        const defaultRequirements = [
+            {
+                match: ['barangay clearance'],
+                items: [
+                    'Completed application stating the purpose of the clearance.',
+                    'Valid government-issued ID (bring the original and a photocopy).',
+                    'Proof of residence in the barangay, such as a recent utility bill or lease agreement.',
+                    'Community Tax Certificate (Cedula), if required by the local barangay.',
+                    'Processing fee, if applicable.'
+                ]
+            },
+            {
+                match: ['certificate of indigency', 'indigency'],
+                items: [
+                    'Completed application stating the purpose (for example, medical, education, or financial assistance).',
+                    'Valid government-issued ID (bring the original and a photocopy).',
+                    'Proof of residence in the barangay.',
+                    'Proof of household income or other evidence of financial need, if available.',
+                    'Supporting letter or document from the school, hospital, or agency, when applicable.'
+                ]
+            },
+            {
+                match: ['barangay residency', 'certificate of residency', 'residency', 'residence'],
+                items: [
+                    'Completed application stating the purpose and how long you have lived in the barangay.',
+                    'Valid government-issued ID (bring the original and a photocopy).',
+                    'Proof of residence, such as a recent utility bill, lease agreement, or property document.',
+                    'Community Tax Certificate (Cedula), if required by the local barangay.',
+                    'Processing fee, if applicable.'
+                ]
+            },
+            {
+                match: ['business permit', 'business clearance'],
+                items: [
+                    'Valid ID of the business owner; an authorized representative should also bring an authorization letter and their ID.',
+                    'DTI, SEC, or CDA business registration, as applicable.',
+                    'Proof of the right to use the business premises, such as a lease agreement or proof of ownership.',
+                    'Business location sketch and a description of the business activity.',
+                    'Previous barangay business clearance or permit for renewal applications.',
+                    'Processing fee, if applicable.'
+                ]
+            },
+            {
+                match: ['certificate of good moral', 'good moral'],
+                items: [
+                    'Completed application stating the purpose of the certificate.',
+                    'Valid government-issued ID (bring the original and a photocopy).',
+                    'Proof of residence in the barangay.',
+                    'Referral or request letter from the school, employer, or requesting agency, when applicable.',
+                    'Community Tax Certificate (Cedula) or processing fee, if required by the local barangay.'
+                ]
+            }
+        ];
+
+        function getDefaultRequirements(documentName) {
+            const name = documentName.toLowerCase();
+            const match = defaultRequirements.find(requirement =>
+                requirement.match.some(keyword => name.includes(keyword))
+            );
+            return match ? match.items : [
+                'Completed application stating the purpose of the document.',
+                'Valid government-issued ID (bring the original and a photocopy).',
+                'Proof of residence in the barangay.',
+                'Supporting documents related to the requested document, if applicable.',
+                'Community Tax Certificate (Cedula) or processing fee, if required by the local barangay.'
+            ];
+        }
+
+        // Shows saved requirements when provided, otherwise the common checklist for the selected document.
         function handleDocumentTypeChange() {
             const doc = documentTypes.find(d => String(d.doc_type_id) === document.getElementById('documentType').value);
             const reqBox = document.getElementById('requirementsBox');
@@ -212,10 +281,10 @@
             }
 
             const requirements = (doc.requirements || '').split(/\r?\n/).map(r => r.trim()).filter(Boolean);
+            const displayedRequirements = requirements.length ? requirements : getDefaultRequirements(doc.name);
             document.getElementById('reqDocTitle').innerText = doc.name;
-            document.getElementById('reqList').innerHTML = requirements.length
-                ? requirements.map(item => `<li class="font-medium">${Api.escape(item)}</li>`).join('')
-                : '<li class="font-medium">Please ask the barangay office for the requirements.</li>';
+            document.getElementById('reqList').innerHTML = displayedRequirements
+                .map(item => `<li class="font-medium">${Api.escape(item)}</li>`).join('');
             document.getElementById('reqFee').innerText = doc.fee > 0 ? `Fee: ₱${doc.fee.toFixed(2)}` : 'Fee: Free';
             reqBox.classList.remove('hidden');
         }
