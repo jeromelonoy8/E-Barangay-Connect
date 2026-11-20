@@ -7,21 +7,18 @@ const TABLE_DEFINITIONS = {
         user_id INT NOT NULL,
         purpose VARCHAR(255) NULL,
         scheduled_date DATE NOT NULL,
-        time_slot VARCHAR(50) NOT NULL,
-        status ENUM('Pending', 'Confirmed', 'Rejected', 'Completed', 'Cancelled', 'No Show') NOT NULL DEFAULT 'Pending',
+        time_slot VARCHAR(50) NULL,
+        status VARCHAR(30) NOT NULL DEFAULT 'Pending',
         rejection_reason TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_appointments_slot (scheduled_date, time_slot, status),
-        CONSTRAINT fk_appointments_request FOREIGN KEY (request_id) REFERENCES document_requests(request_id) ON DELETE SET NULL,
-        CONSTRAINT fk_appointments_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        INDEX idx_appointments_slot (scheduled_date, time_slot, status)
     )`,
     settings: `CREATE TABLE IF NOT EXISTS settings (
         setting_key VARCHAR(100) PRIMARY KEY,
         setting_value TEXT NOT NULL,
         updated_by INT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        CONSTRAINT fk_settings_updated_by FOREIGN KEY (updated_by) REFERENCES users(user_id) ON DELETE SET NULL
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )`
 };
 
@@ -49,14 +46,40 @@ let repairInProgress;
 
 async function repairSchema() {
     for (const [table, definition] of Object.entries(TABLE_DEFINITIONS)) {
-        await db.query(definition);
-
-        const columns = await db.query(
-            `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        const tables = await db.query(
+            `SELECT TABLE_NAME FROM information_schema.TABLES
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
             [table]
         );
-        const existing = new Set(columns.map(column => column.COLUMN_NAME));
+        if (!tables.length) await db.query(definition);
+
+        const columns = await db.query(
+            `SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE, COLUMN_TYPE, CHARACTER_MAXIMUM_LENGTH
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+            [table]
+        );
+        const existing = new Map(columns.map(column => [column.COLUMN_NAME, column]));
+        if (table === 'appointments' && existing.has('status')) {
+            const status = existing.get('status');
+            const allowedStatuses = ["'Pending'", "'Confirmed'", "'Rejected'", "'Completed'", "'Cancelled'", "'No Show'"];
+            const oldStatusEnum = status.DATA_TYPE === 'enum' &&
+                (status.COLUMN_TYPE.includes("'Booked'") || allowedStatuses.some(value => !status.COLUMN_TYPE.includes(value)));
+            const shortStatusText = status.DATA_TYPE === 'varchar' && status.CHARACTER_MAXIMUM_LENGTH < 30;
+            if (oldStatusEnum || shortStatusText) {
+                await db.query("ALTER TABLE appointments MODIFY status VARCHAR(30) NOT NULL DEFAULT 'Pending'");
+                await db.query("UPDATE appointments SET status = 'Confirmed' WHERE status = 'Booked'");
+            }
+        }
+        if (table === 'appointments' && existing.has('request_id') && existing.get('request_id').IS_NULLABLE !== 'YES') {
+            const requestIdType = existing.get('request_id').COLUMN_TYPE.toLowerCase().includes('unsigned')
+                ? 'INT UNSIGNED'
+                : 'INT';
+            await db.query(`ALTER TABLE appointments MODIFY request_id ${requestIdType} NULL`);
+        }
+        if (table === 'appointments' && existing.has('time_slot') && existing.get('time_slot').IS_NULLABLE !== 'YES') {
+            await db.query('ALTER TABLE appointments MODIFY time_slot VARCHAR(50) NULL');
+        }
         if (table === 'appointments' && !existing.has('appointment_id')) {
             const primaryKeys = await db.query(
                 `SELECT COLUMN_NAME FROM information_schema.COLUMNS

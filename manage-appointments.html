@@ -58,7 +58,7 @@
                             <th>Appointment</th>
                             <th>Resident</th>
                             <th>Purpose</th>
-                            <th>Date &amp; Time</th>
+                            <th>Date</th>
                             <th>Status / Reason</th>
                             <th>Actions</th>
                         </tr>
@@ -210,7 +210,7 @@
                     <td><span class="font-bold text-blue-900">${Api.escape(appointment.reference_no)}</span></td>
                     <td><div class="font-semibold">${Api.escape(appointment.resident_name)}</div><div class="text-xs text-slate-500">${Api.escape(appointment.resident_phone || '')}</div></td>
                     <td>${Api.escape(appointment.purpose)}</td>
-                    <td><div>${Api.escape(formatAppointmentDate(appointment.date))}</div><div class="text-xs text-slate-500">${Api.escape(appointment.time_slot)}</div></td>
+                    <td>${Api.escape(formatAppointmentDate(appointment.date))}</td>
                     <td><span class="badge-status ${appointment.status === 'Pending' ? 'badge-pending' : appointment.status === 'Rejected' ? 'badge-rejected' : appointment.status === 'Confirmed' ? 'badge-approved' : ''}">${Api.escape(appointment.status)}</span>${reason}</td>
                     <td>${actions}</td>
                 </tr>`;

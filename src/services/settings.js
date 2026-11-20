@@ -108,7 +108,7 @@ async function appointmentSchedule() {
         openDays: s.appointment_open_days,
         purposes: s.appointment_purposes
     };
-    schedule.configured = schedule.timeSlots.length > 0 && schedule.openDays.length > 0;
+    schedule.configured = schedule.openDays.length > 0;
     if (schedule.configured) return { ...schedule, isDefault: false };
     return {
         ...DEFAULT_APPOINTMENT_SCHEDULE,

@@ -27,9 +27,8 @@ npm start         # http://localhost:5000  (npm run dev restarts on file changes
 No sample or default records are created. After logging in as the admin, set up the barangay's real
 data in this order:
 
-1. **Settings** (`PUT /api/settings`): appointment time slots, residents per slot, open days,
-   announcement categories, official positions. Appointment booking stays off until the first three
-   are set.
+1. **Settings** (`PUT /api/settings`): appointment open days, announcement categories, and official
+   positions. Appointments default to Monday–Friday until custom open days are set.
 2. **Document types** (`POST /api/documents`): each document the barangay issues, with its fee and
    requirements. Residents cannot submit requests until at least one exists.
 3. **Officials** (`POST /api/officials`): accounts for the staff who will process requests.
@@ -61,7 +60,7 @@ Set these environment variables on Render: `NODE_ENV=production`, `DB_HOST`, `DB
   - `401` not logged in or session expired
   - `403` wrong role
   - `404` not found, or not yours
-  - `409` conflict (duplicate, slot full, wrong status)
+  - `409` conflict (duplicate appointment or wrong status)
   - `429` too many login attempts
 - **References:** requests and appointments also have `reference_no` (`REQ-0001`, `APT-0001`).
   Any `:id` in a request or appointment URL accepts the number or the reference.
@@ -108,7 +107,7 @@ Barangay-specific configuration, stored in the database. Every value is empty un
 
 | Key | Type | Example | Effect |
 |---|---|---|---|
-| `appointment_time_slots` | list of text | `["08:30 AM - 09:30 AM", "01:30 PM - 02:30 PM"]` | Slots residents can book |
+| `appointment_time_slots` | list of text | `["08:30 AM - 09:30 AM", "01:30 PM - 02:30 PM"]` | Legacy setting; resident appointments are date-only |
 | `appointment_slot_capacity` | number 1–1000 | `10` | Legacy setting retained for compatibility; appointments are not capped |
 | `appointment_open_days` | list of 0–6 | `[1, 2, 3, 4, 5]` (0 = Sunday) | Days the hall accepts appointments |
 | `appointment_purposes` | list of text | `["Document Pickup", "Consultation"]` | When set, residents pick one when booking. When empty, purpose is free text |
@@ -164,22 +163,20 @@ const res = await fetch('/api/requests', {
 
 ### Appointments
 
-Time slots and open days come from [Settings](#settings). Until a complete custom schedule is
-saved, the scheduler uses a Monday–Friday fallback with eight hourly appointment windows from
-8:00 AM to 4:00 PM. Bookings have no per-slot or per-day capacity limit. `time_slot` must exactly
-match one of the effective schedule's slots. Statuses: `Pending`, `Confirmed`, `Rejected`, `Completed`,
-`Cancelled`, `No Show`.
-New bookings start as `Pending`; staff must approve them (`Confirmed`) or reject them. Pending
-appointments reserve a slot. Rejection requires a reason, which is returned to the resident and sent
+Open days come from [Settings](#settings). Until custom open days are saved, appointments default
+to Monday–Friday. Residents choose a date, not a time slot. There is no daily booking cap; each
+resident may have one active appointment per date. Statuses: `Pending`, `Confirmed`, `Rejected`,
+`Completed`, `Cancelled`, `No Show`. New bookings start as `Pending`; staff must approve them
+(`Confirmed`) or reject them. Rejection requires a reason, which is returned to the resident and sent
 in the appointment notification.
 
 | Method | Path | Who | Body / notes |
 |---|---|---|---|
-| GET | `/appointments/schedule` | public | Effective schedule: time slots, unlimited capacity (`null`), open days, purposes, and whether defaults are active |
-| GET | `/appointments/calendar` | public | Up to 8 Google Calendar events; on missing configuration or Google `403`/`404`, returns upcoming confirmed appointment dates and times without resident details |
-| GET | `/appointments/availability?date=` | public | Every effective slot with `booked`, `available`, `is_full` |
-| GET | `/appointments/forecast?days=7` | public | Bookings per open day, for the weekly traffic cards |
-| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`; creates a pending appointment. `409` if this resident already booked the same slot |
+| GET | `/appointments/schedule` | public | Effective open days, purposes, legacy time-slot setting, and whether defaults are active |
+| GET | `/appointments/calendar` | public | Up to 8 Google Calendar events; on missing configuration or Google `403`/`404`, returns upcoming confirmed dates without resident details |
+| GET | `/appointments/availability?date=` | public | Whether the date is open and the total active bookings for that day |
+| GET | `/appointments/forecast?days=7` | public | Daily booking totals for the weekly count cards |
+| POST | `/appointments` | resident | `purpose`, `date`, optional `request_id`; creates a pending appointment. `409` if this resident already has an active appointment that day |
 | GET | `/appointments/mine` | resident | Add `?upcoming=true` for pending or confirmed appointments from today onward |
 | PATCH | `/appointments/:id/cancel` | owner | Only when `Pending` or `Confirmed` |
 | GET | `/appointments/:id` | owner or staff | |
@@ -188,6 +185,7 @@ in the appointment notification.
 
 Appointment object: `appointment_id, reference_no, user_id, resident_name, resident_phone, request_id,
 request_reference_no, purpose, date, time_slot, status, rejection_reason, created_at, updated_at`.
+`time_slot` is `null` for date-only bookings and may contain a time for legacy appointments.
 
 ### Resident help integrations
 

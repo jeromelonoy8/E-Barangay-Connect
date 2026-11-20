@@ -110,7 +110,7 @@
         <!-- Page Header -->
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Schedule an Appointment</h1>
-            <p class="text-gray-500 text-sm mt-1">Book a visit to the barangay office and check live crowd counts before picking a time</p>
+            <p class="text-gray-500 text-sm mt-1">Book a visit to the barangay office and check the daily booking count before choosing a date</p>
         </div>
 
         <!-- Minimal upcoming events from the public barangay Google Calendar -->
@@ -124,12 +124,12 @@
             </div>
         </div>
 
-        <!-- Dynamic Real-Time Weekly Crowd Forecast Card -->
+        <!-- Daily appointment counts -->
         <div class="dash-card bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
             <div class="flex items-center justify-between border-b pb-3 border-gray-100">
                 <div class="flex items-center space-x-2">
                     <i class="fa-solid fa-users text-[#1e3a8a]"></i>
-                    <h2 class="text-base font-bold text-gray-900">Live Weekly Resident Booking Count</h2>
+                    <h2 class="text-base font-bold text-gray-900">Daily Resident Booking Count</h2>
                 </div>
                 <span class="text-xs text-emerald-600 font-bold flex items-center">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping mr-1.5"></span>
@@ -138,12 +138,12 @@
             </div>
 
             <!-- Forecast Pills Grid -->
-            <div id="weeklyForecastGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+            <div id="dailyBookingGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
                 <!-- Dynamically calculated from localStorage -->
             </div>
             
             <p class="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                <i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i> <strong>Tip:</strong> Pick days with <strong class="text-emerald-600">Low Traffic</strong> for faster processing and shorter queues at the barangay hall.
+                <i class="fa-regular fa-lightbulb text-amber-500 mr-1"></i> The count shows how many appointments are booked for each open day.
             </p>
         </div>
 
@@ -178,16 +178,6 @@
                         <span id="dateTrafficText">Selected Date Total: 0 Residents Booked</span>
                         <span id="dateTrafficBadge" class="px-2 py-0.5 rounded-full text-[11px]">Recommended</span>
                     </div>
-                </div>
-
-                <!-- Time Slot Selection -->
-                <div>
-                    <label for="timeSlot" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Time Slot <span class="text-red-500">*</span>
-                    </label>
-                    <select id="timeSlot" required disabled class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-gray-50 text-gray-500 focus:ring-2 focus:ring-blue-900 focus:outline-none">
-                        <option value="" disabled selected>Select a date first</option>
-                    </select>
                 </div>
 
                 <!-- Action Buttons -->
