@@ -208,7 +208,10 @@
             {
                 match: ['barangay clearance'],
                 items: [
-                    'Complete the online request and state the purpose of the clearance.',
+                    'State the purpose of the clearance in the online request.',
+                    'Upload a clear photo or scan of a valid government-issued ID.',
+                    'Upload proof of residence in the barangay.',
+                    'Upload a clear photo or scan of your Community Tax Certificate (Cedula), if required by the local barangay.',
                     'Processing fee, if applicable.'
                 ]
             },
@@ -290,12 +293,10 @@
 
             const requirements = (doc.requirements || '').split(/\r?\n/).map(r => r.trim()).filter(Boolean);
             const isBarangayClearance = doc.name.toLowerCase().includes('barangay clearance');
-            const displayedRequirements = (requirements.length ? requirements : getDefaultRequirements(doc.name))
-                .filter(item => !isBarangayClearance || !(
-                    /valid government-issued id.*original.*photocopy/i.test(item) ||
-                    /proof of residence/i.test(item) ||
-                    /community tax certificate.*cedula.*if required by the local barangay/i.test(item)
-                ))
+            const sourceRequirements = isBarangayClearance
+                ? getDefaultRequirements(doc.name)
+                : (requirements.length ? requirements : getDefaultRequirements(doc.name));
+            const displayedRequirements = sourceRequirements
                 .map(formatOnlineRequirement)
                 .filter(Boolean);
             document.getElementById('reqDocTitle').innerText = doc.name;
