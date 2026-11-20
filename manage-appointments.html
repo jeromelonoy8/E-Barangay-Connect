@@ -10,14 +10,18 @@
 </head>
 <body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen flex flex-col">
     <nav class="bg-[#1e3a8a] text-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-6 py-3.5 flex justify-between items-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row sm:justify-between items-center gap-3">
             <div class="font-semibold text-lg tracking-wide">Barangay Admin Portal</div>
-            <div class="flex items-center space-x-6 text-sm font-medium">
+            <div class="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-sm font-medium">
                 <a href="admin-dashboard.html" class="text-blue-100 hover:text-white">Dashboard</a>
                 <a href="manage-requests.html" class="text-blue-100 hover:text-white">Manage Requests</a>
                 <a href="manage-appointments.html" class="text-white font-semibold">Appointments</a>
                 <a href="announcements.html" class="text-blue-100 hover:text-white">Announcements</a>
                 <a href="add-official.html" class="text-blue-100 hover:text-white">Add Official</a>
+                <button onclick="openProfileModal()" class="text-blue-100 hover:text-white cursor-pointer inline-flex items-center gap-2">
+                    <span id="navAvatarContainer" class="w-7 h-7 rounded-full bg-blue-100 text-blue-900 overflow-hidden inline-flex items-center justify-center"></span>
+                    <span id="navProfileName">Profile</span>
+                </button>
                 <button onclick="handleLogout()" class="text-blue-100 hover:text-white cursor-pointer">Logout</button>
             </div>
         </div>
@@ -82,6 +86,70 @@
                 <button id="confirmRejectAppointment" type="submit" class="px-4 py-2 rounded-lg bg-rose-700 text-white font-semibold">Reject appointment</button>
             </div>
         </form>
+    </div>
+
+    <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-[#1e3a8a] text-white p-6 flex justify-between items-center shrink-0">
+                <div class="flex items-center space-x-3">
+                    <button type="button" class="relative group cursor-pointer" onclick="document.getElementById('profilePicInput').click()" aria-label="Change profile photo">
+                        <div id="modalAvatar" class="w-12 h-12 rounded-full bg-blue-100 text-[#1e3a8a] font-bold flex items-center justify-center text-sm overflow-hidden border-2 border-white/20 shadow-sm"></div>
+                        <span class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs">
+                            <i class="fa-solid fa-camera"></i>
+                        </span>
+                    </button>
+                    <div>
+                        <h2 id="modalProfileName" class="font-bold text-sm">Admin Profile</h2>
+                        <p id="modalProfileRole" class="text-xs text-blue-200"></p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeProfileModal()" class="text-blue-200 hover:text-white transition" aria-label="Close profile">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-5">
+                <input type="file" id="profilePicInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                <form id="profileDetailsForm" onsubmit="handleSaveProfileDetails(event)" class="space-y-3">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Account Details</h3>
+                    <div>
+                        <label for="profileUsername" class="block text-[11px] font-semibold text-slate-600 mb-1">Username</label>
+                        <input type="text" id="profileUsername" disabled class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label for="profileEmail" class="block text-[11px] font-semibold text-slate-600 mb-1">Email Address *</label>
+                        <input type="email" id="profileEmail" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label for="profilePhone" class="block text-[11px] font-semibold text-slate-600 mb-1">Contact / Phone Number *</label>
+                        <input type="tel" id="profilePhone" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition">Save Details</button>
+                    </div>
+                </form>
+                <hr class="border-slate-100">
+                <form id="changePasswordForm" onsubmit="handleChangePassword(event)" class="space-y-3">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Security &amp; Password</h3>
+                    <div>
+                        <label for="currentPassword" class="block text-[11px] font-semibold text-slate-600 mb-1">Current Password</label>
+                        <input type="password" id="currentPassword" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label for="newPassword" class="block text-[11px] font-semibold text-slate-600 mb-1">New Password</label>
+                        <input type="password" id="newPassword" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label for="confirmPassword" class="block text-[11px] font-semibold text-slate-600 mb-1">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:bg-white transition">
+                    </div>
+                    <div id="modalAlert" class="hidden text-xs text-center py-2 px-3 rounded-lg font-medium"></div>
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" onclick="closeProfileModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">Close</button>
+                        <button type="submit" class="w-1/2 bg-[#1e3a8a] hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition">Update Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="api-client.js"></script>

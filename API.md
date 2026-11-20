@@ -103,7 +103,7 @@ Barangay-specific configuration, stored in the database. Every value is empty un
 
 | Method | Path | Who | Body / notes |
 |---|---|---|---|
-| GET | `/settings` | public | All settings. Pages use these to fill dropdowns |
+| GET | `/settings` | public | Stored settings. Pages use these to fill dropdowns |
 | PUT | `/settings` | admin | Any subset of the keys below. Send `null` to clear one |
 
 | Key | Type | Example | Effect |
@@ -164,19 +164,22 @@ const res = await fetch('/api/requests', {
 
 ### Appointments
 
-Time slots, capacity and open days come from [Settings](#settings). Until they are set, availability and
-forecast return `configured: false` and booking returns `409`. `time_slot` must exactly match one of
-the configured slots. Statuses: `Pending`, `Confirmed`, `Rejected`, `Completed`, `Cancelled`, `No Show`.
+Time slots, capacity and open days come from [Settings](#settings). Until a complete custom schedule is
+saved, the scheduler uses a Monday–Friday fallback with ten evenly spaced appointment windows from
+8:00 AM to 5:00 PM. The fallback has no per-slot or per-day booking limit. `time_slot` must exactly
+match one of the effective schedule's slots. Statuses: `Pending`, `Confirmed`, `Rejected`, `Completed`,
+`Cancelled`, `No Show`.
 New bookings start as `Pending`; staff must approve them (`Confirmed`) or reject them. Pending
 appointments reserve a slot. Rejection requires a reason, which is returned to the resident and sent
 in the appointment notification.
 
 | Method | Path | Who | Body / notes |
 |---|---|---|---|
-| GET | `/appointments/calendar` | public | Up to 8 upcoming events from the configured public Google Calendar |
-| GET | `/appointments/availability?date=` | public | Every configured slot with `booked`, `available`, `is_full` |
+| GET | `/appointments/schedule` | public | Effective schedule: time slots, capacity (`null` means unlimited), open days, purposes, and whether defaults are active |
+| GET | `/appointments/calendar` | public | Up to 8 Google Calendar events; on missing configuration or Google `403`/`404`, returns upcoming confirmed appointment dates and times without resident details |
+| GET | `/appointments/availability?date=` | public | Every effective slot with `booked`, `available`, `is_full` |
 | GET | `/appointments/forecast?days=7` | public | Bookings per open day, for the weekly traffic cards |
-| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`; creates a pending appointment. `409` if the slot is full, already booked by this resident, or scheduling is not configured |
+| POST | `/appointments` | resident | `purpose`, `date`, `time_slot`, optional `request_id`; creates a pending appointment. `409` if the slot is full or already booked by this resident |
 | GET | `/appointments/mine` | resident | Add `?upcoming=true` for pending or confirmed appointments from today onward |
 | PATCH | `/appointments/:id/cancel` | owner | Only when `Pending` or `Confirmed` |
 | GET | `/appointments/:id` | owner or staff | |

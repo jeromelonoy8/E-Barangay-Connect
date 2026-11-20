@@ -18,9 +18,9 @@ async function initializeAppointments() {
 
 async function loadAppointmentSettings() {
     try {
-        const settings = await Api.get(null, '/api/settings');
-        appointmentSlots = settings.appointment_time_slots || [];
-        const purposes = settings.appointment_purposes || [];
+        const settings = await Api.get(null, '/api/appointments/schedule');
+        appointmentSlots = settings.time_slots || [];
+        const purposes = settings.purposes || [];
         if (purposes.length) {
             appointmentPurposeSelect.innerHTML = '<option value="" disabled selected>Select purpose</option>' +
                 purposes.map(purpose => `<option value="${Api.escape(purpose)}">${Api.escape(purpose)}</option>`).join('');
@@ -42,19 +42,23 @@ async function loadWeeklyForecast() {
             return;
         }
         grid.innerHTML = forecast.days.map(day => {
-            const busy = day.utilization >= 75;
-            const moderate = day.utilization >= 40;
+            const uncapped = day.capacity === null;
+            const busy = !uncapped && day.utilization >= 75;
+            const moderate = !uncapped && day.utilization >= 40;
             const color = busy
                 ? { card: 'bg-red-50 border-red-200', pill: 'bg-red-100 text-red-700', text: 'text-red-600' }
                 : moderate
                     ? { card: 'bg-amber-50 border-amber-200', pill: 'bg-amber-100 text-amber-800', text: 'text-amber-700' }
                     : { card: 'bg-emerald-50 border-emerald-200', pill: 'bg-emerald-100 text-emerald-700', text: 'text-emerald-600' };
-            const label = busy ? 'High Traffic' : moderate ? 'Moderate' : 'Low Traffic';
+            const label = uncapped ? 'Open Schedule' : busy ? 'High Traffic' : moderate ? 'Moderate' : 'Low Traffic';
+            const bookingCount = day.capacity === null
+                ? `${day.open_slots} time slots open · ${day.booked} booked`
+                : `${Math.max(day.capacity - day.booked, 0)} booking spots open · ${day.booked} / ${day.capacity} booked`;
             return `
                 <div class="${color.card} border rounded-xl p-3 text-center transition-all">
                     <p class="text-xs font-bold text-gray-700">${Api.escape(day.day)} ${Api.escape(formatShortDate(day.date))}</p>
                     <span class="inline-block px-2 py-0.5 text-[10px] font-extrabold ${color.pill} rounded-full mt-1.5">${label}</span>
-                    <p class="text-[10px] ${color.text} mt-1.5 font-bold">${day.booked} / ${day.capacity} booked</p>
+                    <p class="text-[10px] ${color.text} mt-1.5 font-bold">${bookingCount}</p>
                 </div>
             `;
         }).join('');
@@ -68,15 +72,20 @@ async function loadCalendarEvents() {
     try {
         const data = await Api.get(null, '/api/appointments/calendar');
         if (!data.events.length) {
-            container.innerHTML = '<p class="text-xs text-slate-500">No public barangay calendar events in the next 30 days.</p>';
+            container.innerHTML = data.source === 'appointments'
+                ? '<p class="text-xs text-slate-500">No upcoming confirmed barangay appointments in the next 30 days.</p>'
+                : '<p class="text-xs text-slate-500">No public barangay calendar events in the next 30 days.</p>';
             return;
         }
-        container.innerHTML = data.events.map(event => {
+        const fallbackNotice = data.source === 'appointments'
+            ? '<p class="text-xs text-slate-500">Showing confirmed appointments from this system.</p>'
+            : '';
+        container.innerHTML = fallbackNotice + data.events.map(event => {
             const link = safeCalendarUrl(event.url);
             return `
                 <div class="border-l-2 border-blue-200 pl-3 py-1">
                     <p class="text-sm font-semibold text-slate-800">${Api.escape(event.title)}</p>
-                    <p class="text-xs text-slate-500">${Api.escape(formatCalendarDate(event.start))}${event.location ? ` · ${Api.escape(event.location)}` : ''}</p>
+                    <p class="text-xs text-slate-500">${Api.escape(formatCalendarDate(event.start))}${event.time_slot ? ` · ${Api.escape(event.time_slot)}` : event.location ? ` · ${Api.escape(event.location)}` : ''}</p>
                     ${link ? `<a class="text-xs font-semibold text-blue-800 hover:underline" href="${link}" target="_blank" rel="noopener noreferrer">View event</a>` : ''}
                 </div>
             `;
@@ -120,14 +129,18 @@ async function handleDateChange() {
 
         const booked = availability.total_booked;
         text.innerText = `Selected Date: ${booked} resident${booked === 1 ? '' : 's'} booked`;
-        badge.innerText = booked >= availability.capacity_per_slot * availability.slots.length ? 'Busy Day' : 'Open';
+        const dailyCapacity = availability.capacity_per_slot === null
+            ? null
+            : availability.capacity_per_slot * availability.slots.length;
+        badge.innerText = dailyCapacity !== null && booked >= dailyCapacity ? 'Busy Day' : 'Open';
         badge.className = 'px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-800 font-bold';
         timeSelect.disabled = false;
         timeSelect.innerHTML = '<option value="" disabled selected>Select an available time slot</option>' +
             availability.slots.map(slot => {
                 const full = slot.is_full;
-                const demand = slot.booked >= Math.ceil(availability.capacity_per_slot / 2) ? ' · Busy' : '';
-                return `<option value="${Api.escape(slot.time_slot)}" ${full ? 'disabled' : ''}>${Api.escape(slot.time_slot)} — ${slot.available} available${demand}</option>`;
+                const demand = availability.capacity_per_slot !== null && slot.booked >= Math.ceil(availability.capacity_per_slot / 2) ? ' · Busy' : '';
+                const openCount = slot.available === null ? 'No booking limit' : `${slot.available} available`;
+                return `<option value="${Api.escape(slot.time_slot)}" ${full ? 'disabled' : ''}>${Api.escape(slot.time_slot)} — ${openCount}${demand}</option>`;
             }).join('');
     } catch (err) {
         banner.classList.remove('hidden');

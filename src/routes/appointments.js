@@ -50,6 +50,27 @@ function assertBookableDate(schedule, date) {
     if (!schedule.openDays.includes(time.dayOfWeek(date))) throw badRequest('The barangay hall is closed on that day.');
 }
 
+async function calendarAppointmentFallback() {
+    const from = time.today();
+    const through = time.addDays(from, 30);
+    const rows = await db.query(
+        `SELECT scheduled_date, time_slot FROM appointments
+         WHERE status = 'Confirmed' AND scheduled_date BETWEEN ? AND ?
+         ORDER BY scheduled_date, time_slot LIMIT 8`,
+        [from, through]
+    );
+    return {
+        source: 'appointments',
+        events: rows.map(row => ({
+            title: 'Confirmed barangay appointment',
+            start: row.scheduled_date,
+            time_slot: row.time_slot,
+            location: null,
+            url: null
+        }))
+    };
+}
+
 async function slotCounts(date) {
     const rows = await db.query(
         "SELECT time_slot, COUNT(*) AS booked FROM appointments WHERE scheduled_date = ? AND status IN ('Pending', 'Confirmed') GROUP BY time_slot",
@@ -60,9 +81,21 @@ async function slotCounts(date) {
 
 // --- Public availability ---------------------------------------------------
 
+router.get('/schedule', async (req, res) => {
+    const schedule = await appointmentSchedule();
+    res.json({
+        time_slots: schedule.timeSlots,
+        capacity_per_slot: schedule.capacity,
+        open_days: schedule.openDays,
+        purposes: schedule.purposes,
+        configured: schedule.configured,
+        is_default: schedule.isDefault
+    });
+});
+
 router.get('/calendar', async (req, res) => {
     if (!config.googleCalendar.apiKey || !config.googleCalendar.calendarId) {
-        return res.status(503).json({ error: 'The barangay calendar is not configured on the server.' });
+        return res.json(await calendarAppointmentFallback());
     }
 
     const now = new Date();
@@ -90,11 +123,15 @@ router.get('/calendar', async (req, res) => {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+        if (response.status === 403 || response.status === 404) {
+            return res.json(await calendarAppointmentFallback());
+        }
         console.error(`[CALENDAR] Google Calendar returned ${response.status}:`, data.error && data.error.message);
         return res.status(502).json({ error: 'The barangay calendar is temporarily unavailable.' });
     }
 
     res.json({
+        source: 'google',
         events: (data.items || []).map(event => ({
             title: event.summary || 'Barangay event',
             start: event.start && (event.start.dateTime || event.start.date),
@@ -111,17 +148,18 @@ router.get('/availability', async (req, res) => {
     const schedule = await appointmentSchedule();
     const isOpen = schedule.configured && schedule.openDays.includes(time.dayOfWeek(date)) && date >= time.today();
     const counts = await slotCounts(date);
-    const capacity = schedule.capacity || 0;
 
     res.json({
         date,
         configured: schedule.configured,
+        is_default: schedule.isDefault,
         is_open: isOpen,
-        capacity_per_slot: capacity,
+        capacity_per_slot: schedule.capacity,
         total_booked: Object.values(counts).reduce((sum, n) => sum + n, 0),
         slots: schedule.timeSlots.map(slot => {
             const booked = counts[slot] || 0;
-            return { time_slot: slot, booked, available: Math.max(capacity - booked, 0), is_full: booked >= capacity };
+            const available = schedule.capacity === null ? null : Math.max(schedule.capacity - booked, 0);
+            return { time_slot: slot, booked, available, is_full: schedule.capacity !== null && booked >= schedule.capacity };
         })
     });
 });
@@ -141,7 +179,7 @@ router.get('/forecast', async (req, res) => {
         [start, end]
     );
     const counts = Object.fromEntries(rows.map(r => [r.scheduled_date, Number(r.booked)]));
-    const dailyCapacity = schedule.capacity * schedule.timeSlots.length;
+    const dailyCapacity = schedule.capacity === null ? null : schedule.capacity * schedule.timeSlots.length;
 
     const forecast = [];
     for (let i = 0; i < days; i++) {
@@ -149,9 +187,16 @@ router.get('/forecast', async (req, res) => {
         const dow = time.dayOfWeek(date);
         if (!schedule.openDays.includes(dow)) continue;
         const booked = counts[date] || 0;
-        forecast.push({ date, day: time.DAY_NAMES[dow], booked, capacity: dailyCapacity, utilization: Math.round((booked / dailyCapacity) * 100) });
+        forecast.push({
+            date,
+            day: time.DAY_NAMES[dow],
+            booked,
+            capacity: dailyCapacity,
+            open_slots: dailyCapacity === null ? schedule.timeSlots.length : Math.max(dailyCapacity - booked, 0),
+            utilization: dailyCapacity ? Math.round((booked / dailyCapacity) * 100) : 0
+        });
     }
-    res.json({ configured: true, time_slots: schedule.timeSlots, capacity_per_slot: schedule.capacity, days: forecast });
+    res.json({ configured: true, is_default: schedule.isDefault, time_slots: schedule.timeSlots, capacity_per_slot: schedule.capacity, days: forecast });
 });
 
 // --- Resident -----------------------------------------------------------------
@@ -179,13 +224,15 @@ router.post('/', requireResident, async (req, res) => {
     let appointmentId;
     try {
         appointmentId = await db.withTransaction(async (conn) => {
-            // Locks the slot's rows (and the gap after them) so two residents cannot both take the last place.
+            // Locks this time slot's rows to prevent duplicate bookings and enforce configured capacity.
             const [slotRows] = await conn.query(
                 "SELECT user_id FROM appointments WHERE scheduled_date = ? AND time_slot = ? AND status IN ('Pending', 'Confirmed') FOR UPDATE",
                 [date, slot]
             );
             if (slotRows.some(r => r.user_id === req.user.user_id)) throw conflict('You already have an appointment in this time slot.');
-            if (slotRows.length >= schedule.capacity) throw conflict('This time slot is already full. Please choose another one.');
+            if (schedule.capacity !== null && slotRows.length >= schedule.capacity) {
+                throw conflict('This time slot is already full. Please choose another one.');
+            }
 
             const [result] = await conn.query(
                 "INSERT INTO appointments (request_id, user_id, purpose, scheduled_date, time_slot, status) VALUES (?, ?, ?, ?, ?, 'Pending')",

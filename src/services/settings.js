@@ -1,8 +1,25 @@
 // Barangay-specific configuration, stored in the `settings` table and managed by an admin
-// through PUT /api/settings. Nothing here has a built-in value: until the barangay sets
-// a value, it is empty and the related feature reports that it is not configured.
+// through PUT /api/settings. Unset values remain empty; the appointment scheduler
+// supplies its own weekday fallback until a complete custom schedule is saved.
 const db = require('../db');
 const { badRequest } = require('../utils/errors');
+
+const DEFAULT_APPOINTMENT_SCHEDULE = {
+    timeSlots: [
+        '08:00 AM - 08:54 AM',
+        '08:54 AM - 09:48 AM',
+        '09:48 AM - 10:42 AM',
+        '10:42 AM - 11:36 AM',
+        '11:36 AM - 12:30 PM',
+        '12:30 PM - 01:24 PM',
+        '01:24 PM - 02:18 PM',
+        '02:18 PM - 03:12 PM',
+        '03:12 PM - 04:06 PM',
+        '04:06 PM - 05:00 PM'
+    ],
+    capacity: null,
+    openDays: [1, 2, 3, 4, 5]
+};
 
 function textList(maxItems, maxLength) {
     return (value, label) => {
@@ -94,7 +111,13 @@ async function appointmentSchedule() {
         purposes: s.appointment_purposes
     };
     schedule.configured = schedule.timeSlots.length > 0 && Boolean(schedule.capacity) && schedule.openDays.length > 0;
-    return schedule;
+    if (schedule.configured) return { ...schedule, isDefault: false };
+    return {
+        ...DEFAULT_APPOINTMENT_SCHEDULE,
+        purposes: schedule.purposes,
+        configured: true,
+        isDefault: true
+    };
 }
 
 module.exports = { getSettings, updateSettings, appointmentSchedule, SETTING_KEYS: Object.keys(DEFINITIONS) };

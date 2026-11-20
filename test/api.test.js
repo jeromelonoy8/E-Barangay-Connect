@@ -1,6 +1,7 @@
 const { describe, test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { db, resetDatabase, dropTestDatabase, createUser, startServer, client, PNG, PNG_DATA_URL, pngForm, nextWeekday } = require('./helpers');
+const config = require('../src/config');
 
 let server;
 let api;
@@ -108,7 +109,7 @@ describe('auth', () => {
 });
 
 describe('settings', () => {
-    test('a fresh system has no settings and appointments report not configured', async () => {
+    test('a fresh system uses the default weekday appointment schedule', async () => {
         const settings = await api('GET', '/api/settings');
         assert.deepEqual(settings.data, {
             appointment_time_slots: [],
@@ -119,13 +120,36 @@ describe('settings', () => {
             official_positions: []
         });
 
-        const availability = await api('GET', `/api/appointments/availability?date=${nextWeekday(1, 1)}`);
-        assert.equal(availability.data.configured, false);
-        assert.equal(availability.data.slots.length, 0);
+        const schedule = await api('GET', '/api/appointments/schedule');
+        assert.equal(schedule.status, 200);
+        assert.equal(schedule.data.configured, true);
+        assert.equal(schedule.data.is_default, true);
+        assert.deepEqual(schedule.data.open_days, [1, 2, 3, 4, 5]);
+        assert.equal(schedule.data.capacity_per_slot, null);
+        assert.equal(schedule.data.time_slots.length, 10);
+        assert.equal(schedule.data.time_slots[0], '08:00 AM - 08:54 AM');
+        assert.equal(schedule.data.time_slots[9], '04:06 PM - 05:00 PM');
 
-        const book = await api('POST', '/api/appointments', { token: tokens.juan, json: { purpose: 'x', date: nextWeekday(1, 1), time_slot: 'any' } });
-        assert.equal(book.status, 409);
-        assert.match(book.data.error, /not been set up/);
+        const availability = await api('GET', `/api/appointments/availability?date=${nextWeekday(1, 1)}`);
+        assert.equal(availability.data.configured, true);
+        assert.equal(availability.data.is_default, true);
+        assert.equal(availability.data.slots.length, 10);
+        assert.ok(availability.data.slots.every(slot => slot.available === null && !slot.is_full));
+
+        const date = nextWeekday(2, 2);
+        for (const time_slot of schedule.data.time_slots) {
+            const book = await api('POST', '/api/appointments', {
+                token: tokens.juan, json: { purpose: 'Consultation', date, time_slot }
+            });
+            assert.equal(book.status, 201, JSON.stringify(book.data));
+        }
+        const extraBooking = await api('POST', '/api/appointments', {
+            token: tokens.maria,
+            json: { purpose: 'Consultation', date, time_slot: schedule.data.time_slots[0] }
+        });
+        assert.equal(extraBooking.status, 201, JSON.stringify(extraBooking.data));
+        const dailyAvailability = await api('GET', `/api/appointments/availability?date=${date}`);
+        assert.equal(dailyAvailability.data.total_booked, 11);
     });
 
     test('only admins can change settings, and values are validated', async () => {
@@ -310,10 +334,11 @@ describe('appointments', () => {
         assert.ok(res.data.slots.every(s => s.booked === 0 && s.available === 2));
     });
 
-    test('calendar and chatbot routes report missing server configuration without exposing credentials', async () => {
+    test('calendar falls back cleanly when Google Calendar is not configured', async () => {
         const calendar = await api('GET', '/api/appointments/calendar');
-        assert.equal(calendar.status, 503);
-        assert.match(calendar.data.error, /not configured/);
+        assert.equal(calendar.status, 200);
+        assert.equal(calendar.data.source, 'appointments');
+        assert.deepEqual(calendar.data.events, []);
 
         assert.equal((await api('POST', '/api/help/chat', { json: { message: 'How do I book?' } })).status, 401);
         const chat = await api('POST', '/api/help/chat', { token: tokens.juan, json: { message: 'How do I book?' } });
@@ -395,6 +420,44 @@ describe('appointments', () => {
         assert.equal(done.data.appointment.status, 'Completed');
 
         assert.equal((await api('GET', `/api/appointments/${list.data[1].appointment_id}`, { token: tokens.luz })).status, 404);
+    });
+
+    test('Google Calendar 403/404 falls back to privacy-safe confirmed appointments', async () => {
+        const booking = await api('POST', '/api/appointments', {
+            token: tokens.luz,
+            json: { purpose: 'Private consultation', date: nextWeekday(5, 1), time_slot: slot }
+        });
+        assert.equal(booking.status, 201, JSON.stringify(booking.data));
+        const confirmed = await api('PATCH', `/api/appointments/${booking.data.appointment.appointment_id}/status`, {
+            token: tokens.admin, json: { status: 'Confirmed' }
+        });
+        assert.equal(confirmed.status, 200);
+
+        const previousFetch = global.fetch;
+        const previousApiKey = config.googleCalendar.apiKey;
+        const previousCalendarId = config.googleCalendar.calendarId;
+        config.googleCalendar.apiKey = 'test-calendar-key';
+        config.googleCalendar.calendarId = 'test-calendar-id';
+        try {
+            for (const status of [403, 404]) {
+                global.fetch = async (input, options) => {
+                    if (String(input).includes('googleapis.com/calendar')) {
+                        return { ok: false, status, json: async () => ({ error: { message: 'permission denied' } }) };
+                    }
+                    return previousFetch(input, options);
+                };
+                const calendar = await api('GET', '/api/appointments/calendar');
+                assert.equal(calendar.status, 200);
+                assert.equal(calendar.data.source, 'appointments');
+                assert.ok(calendar.data.events.some(event => event.time_slot === slot));
+                assert.ok(calendar.data.events.every(event => event.title === 'Confirmed barangay appointment'));
+                assert.ok(calendar.data.events.every(event => !('resident_name' in event) && !('purpose' in event)));
+            }
+        } finally {
+            global.fetch = previousFetch;
+            config.googleCalendar.apiKey = previousApiKey;
+            config.googleCalendar.calendarId = previousCalendarId;
+        }
     });
 
     test('forecast covers open days only', async () => {
