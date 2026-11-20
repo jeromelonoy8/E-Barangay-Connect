@@ -120,7 +120,6 @@
                         <!-- Loaded from the document type's requirements -->
                     </ul>
                     <p id="reqFee" class="text-xs font-bold text-slate-700 mt-2"></p>
-                    <p class="text-[10px] text-slate-500 mt-2">These are commonly requested items; local requirements may vary by barangay and purpose.</p>
                 </div>
 
                 <!-- Purpose Field -->
@@ -209,9 +208,6 @@
                 match: ['barangay clearance'],
                 items: [
                     'Completed application stating the purpose of the clearance.',
-                    'Valid government-issued ID (bring the original and a photocopy).',
-                    'Proof of residence in the barangay, such as a recent utility bill or lease agreement.',
-                    'Community Tax Certificate (Cedula), if required by the local barangay.',
                     'Processing fee, if applicable.'
                 ]
             },
@@ -282,7 +278,13 @@
             }
 
             const requirements = (doc.requirements || '').split(/\r?\n/).map(r => r.trim()).filter(Boolean);
-            const displayedRequirements = requirements.length ? requirements : getDefaultRequirements(doc.name);
+            const isBarangayClearance = doc.name.toLowerCase().includes('barangay clearance');
+            const displayedRequirements = (requirements.length ? requirements : getDefaultRequirements(doc.name))
+                .filter(item => !isBarangayClearance || !(
+                    /valid government-issued id.*original.*photocopy/i.test(item) ||
+                    /proof of residence/i.test(item) ||
+                    /community tax certificate.*cedula.*if required by the local barangay/i.test(item)
+                ));
             document.getElementById('reqDocTitle').innerText = doc.name;
             document.getElementById('reqList').innerHTML = displayedRequirements
                 .map(item => `<li class="font-medium">${Api.escape(item)}</li>`).join('');

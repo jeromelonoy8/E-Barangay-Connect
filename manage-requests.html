@@ -95,10 +95,6 @@
                     <option value="document">Document Requests</option>
                     <option value="appointment">Appointment Bookings</option>
                 </select>
-                <label class="text-slate-500 font-semibold whitespace-nowrap" for="purposeFilter">Purpose:</label>
-                <select id="purposeFilter" onchange="filterRequests()" class="w-full md:w-52 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] transition">
-                    <option value="All">All Purposes</option>
-                </select>
             </div>
         </div>
 
@@ -259,14 +255,6 @@
         };
 
         let searchTimer = null;
-        const knownPurposes = new Set([
-            'Document Pickup (Barangay Clearance / Residency)',
-            'In-person Consultation / Filing',
-            'Barangay Lupon / Mediation Hearing',
-            'Senior Citizen Services / Assistance',
-            'Other Official Business'
-        ]);
-
         if (session) {
             Api.setupAdminNav();
             loadRequestsTable();
@@ -299,24 +287,10 @@
                 const records = [...documents, ...appointments].sort((a, b) =>
                     new Date(b.created_at || b.date) - new Date(a.created_at || a.date)
                 );
-                records.forEach(record => {
-                    if (record.purpose) knownPurposes.add(record.purpose);
-                });
-                updatePurposeFilterOptions();
-                const purpose = document.getElementById('purposeFilter').value;
-                renderRequests(records.filter(record => purpose === 'All' || record.purpose === purpose));
+                renderRequests(records);
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-600">${Api.escape(err.message)}</td></tr>`;
             }
-        }
-
-        function updatePurposeFilterOptions() {
-            const select = document.getElementById('purposeFilter');
-            const selectedPurpose = select.value;
-            const purposes = [...knownPurposes].sort((a, b) => a.localeCompare(b));
-            select.innerHTML = '<option value="All">All Purposes</option>' +
-                purposes.map(purpose => `<option value="${Api.escape(purpose)}">${Api.escape(purpose)}</option>`).join('');
-            if (knownPurposes.has(selectedPurpose)) select.value = selectedPurpose;
         }
 
         function filterRequests() {
