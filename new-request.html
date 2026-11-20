@@ -120,6 +120,7 @@
                         <!-- Loaded from the document type's requirements -->
                     </ul>
                     <p id="reqFee" class="text-xs font-bold text-slate-700 mt-2"></p>
+                    <p class="text-[10px] text-slate-500 mt-2">Submit the required documents online with your request. Visit the Barangay Hall once, only to pick up your document when it is ready.</p>
                 </div>
 
                 <!-- Purpose Field -->
@@ -207,49 +208,49 @@
             {
                 match: ['barangay clearance'],
                 items: [
-                    'Completed application stating the purpose of the clearance.',
+                    'Complete the online request and state the purpose of the clearance.',
                     'Processing fee, if applicable.'
                 ]
             },
             {
                 match: ['certificate of indigency', 'indigency'],
                 items: [
-                    'Completed application stating the purpose (for example, medical, education, or financial assistance).',
-                    'Valid government-issued ID (bring the original and a photocopy).',
-                    'Proof of residence in the barangay.',
-                    'Proof of household income or other evidence of financial need, if available.',
-                    'Supporting letter or document from the school, hospital, or agency, when applicable.'
+                    'State the purpose in the online request (for example, medical, education, or financial assistance).',
+                    'Upload a clear photo or scan of a valid government-issued ID.',
+                    'Upload proof of residence in the barangay.',
+                    'Upload proof of household income or other evidence of financial need, if available.',
+                    'Upload a supporting letter or document from the school, hospital, or agency, when applicable.'
                 ]
             },
             {
                 match: ['barangay residency', 'certificate of residency', 'residency', 'residence'],
                 items: [
-                    'Completed application stating the purpose and how long you have lived in the barangay.',
-                    'Valid government-issued ID (bring the original and a photocopy).',
-                    'Proof of residence, such as a recent utility bill, lease agreement, or property document.',
-                    'Community Tax Certificate (Cedula), if required by the local barangay.',
+                    'State the purpose and how long you have lived in the barangay in the online request.',
+                    'Upload a clear photo or scan of a valid government-issued ID.',
+                    'Upload proof of residence, such as a recent utility bill, lease agreement, or property document.',
+                    'Upload a clear photo or scan of your Community Tax Certificate (Cedula), if required by the local barangay.',
                     'Processing fee, if applicable.'
                 ]
             },
             {
                 match: ['business permit', 'business clearance'],
                 items: [
-                    'Valid ID of the business owner; an authorized representative should also bring an authorization letter and their ID.',
-                    'DTI, SEC, or CDA business registration, as applicable.',
-                    'Proof of the right to use the business premises, such as a lease agreement or proof of ownership.',
-                    'Business location sketch and a description of the business activity.',
-                    'Previous barangay business clearance or permit for renewal applications.',
+                    "Upload a clear photo or scan of the business owner's valid ID; if using a representative, upload their ID and authorization letter.",
+                    'Upload DTI, SEC, or CDA business registration, as applicable.',
+                    'Upload proof of the right to use the business premises, such as a lease agreement or proof of ownership.',
+                    'Upload a business location sketch and a description of the business activity.',
+                    'Upload the previous barangay business clearance or permit for renewal applications.',
                     'Processing fee, if applicable.'
                 ]
             },
             {
                 match: ['certificate of good moral', 'good moral'],
                 items: [
-                    'Completed application stating the purpose of the certificate.',
-                    'Valid government-issued ID (bring the original and a photocopy).',
-                    'Proof of residence in the barangay.',
-                    'Referral or request letter from the school, employer, or requesting agency, when applicable.',
-                    'Community Tax Certificate (Cedula) or processing fee, if required by the local barangay.'
+                    'State the purpose of the certificate in the online request.',
+                    'Upload a clear photo or scan of a valid government-issued ID.',
+                    'Upload proof of residence in the barangay.',
+                    'Upload a referral or request letter from the school, employer, or requesting agency, when applicable.',
+                    'Upload a clear photo or scan of your Community Tax Certificate (Cedula), if required by the local barangay.'
                 ]
             }
         ];
@@ -260,12 +261,22 @@
                 requirement.match.some(keyword => name.includes(keyword))
             );
             return match ? match.items : [
-                'Completed application stating the purpose of the document.',
-                'Valid government-issued ID (bring the original and a photocopy).',
-                'Proof of residence in the barangay.',
-                'Supporting documents related to the requested document, if applicable.',
-                'Community Tax Certificate (Cedula) or processing fee, if required by the local barangay.'
+                'State the purpose of the document in the online request.',
+                'Upload a clear photo or scan of a valid government-issued ID.',
+                'Upload proof of residence in the barangay.',
+                'Upload supporting documents related to the requested document, if applicable.',
+                'Upload a clear photo or scan of your Community Tax Certificate (Cedula), if required by the local barangay.'
             ];
+        }
+
+        function formatOnlineRequirement(item) {
+            if (/\b(?:barangay hall|barangay office)\b/i.test(item) &&
+                /\b(?:bring|visit|go to|come to|report to|appear at|submit in person)\b/i.test(item)) {
+                return '';
+            }
+            return item
+                .replace(/\(bring the original and a photocopy\)/i, '(upload a clear photo or scan)')
+                .replace(/\bbring\b/gi, 'upload');
         }
 
         // Shows saved requirements when provided, otherwise the common checklist for the selected document.
@@ -284,7 +295,9 @@
                     /valid government-issued id.*original.*photocopy/i.test(item) ||
                     /proof of residence/i.test(item) ||
                     /community tax certificate.*cedula.*if required by the local barangay/i.test(item)
-                ));
+                ))
+                .map(formatOnlineRequirement)
+                .filter(Boolean);
             document.getElementById('reqDocTitle').innerText = doc.name;
             document.getElementById('reqList').innerHTML = displayedRequirements
                 .map(item => `<li class="font-medium">${Api.escape(item)}</li>`).join('');
